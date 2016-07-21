@@ -90,7 +90,11 @@ def search(args):
 
 
 def search_loop(args):
+    i = 0;
     while True:
-        search(args)
+        config['ORIGINAL_LATITUDE'] = config['locs'][i][0]
+        config['ORIGINAL_LONGITUDE'] = config['locs'][i][1]
+        search(args);
         log.info("Scanning complete.")
+        i = i+1 if i < len(config['locs']) -1 else 0
         time.sleep(1)

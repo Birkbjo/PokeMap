@@ -23,9 +23,9 @@ def get_args():
     # fuck PEP8
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--auth-service', type=str.lower, help='Auth Service', default='ptc')
-    parser.add_argument('-u', '--username', help='Username', required=True)
+    parser.add_argument('-u', '--username', help='Username', required=False)
     parser.add_argument('-p', '--password', help='Password', required=False)
-    parser.add_argument('-l', '--location', type=parse_unicode, help='Location, can be an address or coordinates', required=True)
+    parser.add_argument('-l', '--location', type=parse_unicode, help='Location, can be an address or coordinates', required=False)
     parser.add_argument('-st', '--step-limit', help='Steps', required=True, type=int)
     parser.add_argument('-H', '--host', help='Set web server listening host', default='127.0.0.1')
     parser.add_argument('-P', '--port', type=int, help='Set web server listening port', default=5000)
@@ -37,8 +37,7 @@ def get_args():
     parser.add_argument('-k', '--google-maps-key', help='Google Maps Javascript API Key', default=None, dest='gmaps_key')
     parser.set_defaults(DEBUG=False)
     args = parser.parse_args()
-    if args.password is None:
-        args.password = getpass.getpass()
+
 
     return args
 
@@ -109,3 +108,8 @@ def load_credentials(filepath):
                 " Please take a look at the wiki for instructions on how to generate this key,"
                 " then add that key to the file!")
         return creds
+
+def load_locs(filepath):
+    with open(filepath+os.path.sep+'locs.json') as file:
+        locs = json.load(file)
+        return locs

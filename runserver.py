@@ -8,7 +8,7 @@ from threading import Thread
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, insert_mock_data, load_credentials
+from pogom.utils import get_args, insert_mock_data, load_credentials,load_locs
 from pogom.search import search_loop
 from pogom.models import create_tables, Pokemon, Pokestop, Gym
 
@@ -41,13 +41,25 @@ if __name__ == '__main__':
 
     create_tables()
 
-    position = get_pos_by_name(args.location)
-    log.info('Parsed location is: {:.4f}/{:.4f}/{:.4f} (lat/lng/alt)'.
-             format(*position))
+    locs = load_locs(os.path.dirname(os.path.realpath(__file__)))['locs']
+    creds = load_credentials(os.path.dirname(os.path.realpath(__file__)))
+    if args.location:
+        pos = get_pos_by_name(args.location)
+        config['locs'].append(pos)
 
-    config['ORIGINAL_LATITUDE'] = position[0]
-    config['ORIGINAL_LONGITUDE'] = position[1]
+    for l in locs:
+        pos = get_pos_by_name(l)
+        config['locs'].append(pos)
+
+
     config['LOCALE'] = args.locale
+
+    if not args.username or not args.password:
+        user1 = creds['users'][0]
+        args.username = user1['name']
+        args.auth_service = user1['type']
+        args.password = user1['pass']
+        log.debug("Loaded user {} from file".format(user1['name']))
 
     if not args.mock:
         start_locator_thread(args)
@@ -59,5 +71,5 @@ if __name__ == '__main__':
     if args.gmaps_key is not None:
         config['GMAPS_KEY'] = args.gmaps_key
     else:
-        config['GMAPS_KEY'] = load_credentials(os.path.dirname(os.path.realpath(__file__)))['gmaps_key']
+        config['GMAPS_KEY'] = creds['gmaps_key']
     app.run(threaded=True, debug=args.debug, host=args.host, port=args.port)
