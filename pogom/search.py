@@ -89,9 +89,9 @@ def login(args, position):
 
 
 def search(args):
-    num_steps = args.step_limit
+    num_steps = config['steps']
     position = (config['ORIGINAL_LATITUDE'], config['ORIGINAL_LONGITUDE'], 0)
-
+    log.info("Scanning {}".format(position))
     if api._auth_provider and api._auth_provider._ticket_expire:
         remaining_time = api._auth_provider._ticket_expire/1000 - time.time()
 
@@ -133,9 +133,16 @@ def search(args):
         time.sleep(REQ_SLEEP)
 
 
-def search_loop(args):
+def search_loop(args,num_threads,tId = 0):
+
+
     i = 0;
     while True:
+        if num_threads > 1:
+            i = tId
+            if i >= len(config['locs']):
+                log.info("Not enough locations for this thread. Search ended.")
+                return
         config['ORIGINAL_LATITUDE'] = config['locs'][i][0]
         config['ORIGINAL_LONGITUDE'] = config['locs'][i][1]
         search(args);

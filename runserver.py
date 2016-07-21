@@ -3,6 +3,7 @@
 
 import os
 import logging
+import time
 
 from threading import Thread
 
@@ -18,14 +19,17 @@ log = logging.getLogger(__name__)
 
 
 def start_locator_thread(args):
-    search_thread = Thread(target=search_loop, args=(args,))
-    search_thread.daemon = True
-    search_thread.name = 'search_thread'
-    search_thread.start()
+    num_t = 1
+    for i in range(0,num_t):
+        search_thread = Thread(target=search_loop, args=(args,num_t,i))
+        search_thread.daemon = True
+        search_thread.name = 'search_thread {}'.format(i)
+        search_thread.start()
+        time.sleep(1)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(module)11s] [%(levelname)7s] %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(module)11s] %(threadName)s [%(levelname)7s] %(message)s')
 
     logging.getLogger("peewee").setLevel(logging.INFO)
     logging.getLogger("requests").setLevel(logging.WARNING)
@@ -51,7 +55,7 @@ if __name__ == '__main__':
         pos = get_pos_by_name(l)
         config['locs'].append(pos)
 
-
+    config['steps'] = args.step_limit
     config['LOCALE'] = args.locale
 
     if not args.username or not args.password:

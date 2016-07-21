@@ -1,12 +1,12 @@
 var map;
-
+var placeMarker;
 function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         center: {
             lat: center_lat,
             lng: center_lng
         },
-        zoom: 16
+        zoom: 14
 
     });
 
@@ -17,6 +17,44 @@ function initMap() {
         },
         map: map,
         animation: google.maps.Animation.DROP
+    });
+
+    google.maps.event.addListener(map,'click', function(event) {
+        if(placeMarker) {
+            placeMarker.setPosition(event.latLng);
+        } else {
+            var markImg = {
+                url: 'http://www.clker.com/cliparts/q/I/Q/u/Z/1/marker.svg',
+                scaledSize: new google.maps.Size(50,50)
+            };
+            placeMarker = new google.maps.Marker({
+                position:event.latLng,
+                map:map,
+                icon: markImg
+            });
+        }
+        var step = document.getElementById("steps").value;
+        $.ajax({
+            url: "next_loc",
+            type: 'POST',
+            data: JSON.stringify({
+                'lat': JSON.stringify(event.latLng.lat()),
+                'lon': JSON.stringify(event.latLng.lng()),
+                'steps': step
+            }),
+            contentType:"application/json; charset=utf-8",
+            dataType: "json",
+
+            success: function(res) {
+                console.log(result);
+                placeMarker.setPosition(event.latLng);
+            },
+            error: function (err) {
+                console.log(err)
+            }
+        });
+
+        map.panTo(placeMarker.getPosition());
     });
 
 };

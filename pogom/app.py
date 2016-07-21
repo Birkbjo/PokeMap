@@ -8,8 +8,10 @@ from datetime import datetime
 
 from . import config
 from .models import Pokemon, Gym, Pokestop
-
-
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+log = logging.getLogger(__name__)
 class Pogom(Flask):
     def __init__(self, import_name, **kwargs):
         super(Pogom, self).__init__(import_name, **kwargs)
@@ -25,6 +27,7 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'])
 
     def raw_data(self):
+        log.info(config['locs'])
         d = {}
         if request.args.get('pokemon', 'true') == 'true':
             d['pokemons'] = Pokemon.get_active()
@@ -38,14 +41,27 @@ class Pogom(Flask):
         return jsonify(d)
 
     def next_loc(self):
-        lat = request.args.get('lat', type=float)
-        lon = request.args.get('lon', type=float)
+        log.info(config['locs'])
+        content = request.get_json(force=True,silent=False)
+        log.info(content)
+        lat = float(request.get_json(force=True,silent=True).get('lat',''))
+        lon = float(request.get_json(force=True).get('lon',''))
+        log.info("parsed json")
+        #lon = request.args.get('lon', type=float)
+        #steps = request.args.get('steps',type=int)
+        steps = int(request.get_json().get('steps',''))
+
+        log.info("Got {},{} steps ".format(lat,lon,steps))
         if not (lat and lon):
-            print('[-] Invalid next location: %s,%s' % (lat, lon))
+            log.error('[-] Invalid next location: %s,%s' % (lat, lon))
             return 'bad parameters', 400
         else:
-            config['ORIGINAL_LATITUDE'] = lat
-            config['ORIGINAL_LONGITUDE'] = lon
+            del config['locs'][:]
+            config['locs'].append((lat,lon))
+            log.info(config['locs'])
+            if steps:
+                config['steps'] = steps
+            print "UPDATED LOC"
             return 'ok'
 
 

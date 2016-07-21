@@ -9,6 +9,7 @@ config = {
     'ORIGINAL_LONGITUDE': None,
     'GMAPS_KEY': None,
     'locs': [],
-    'users': []
+    'users': [],
+    'steps':5
 
 }
