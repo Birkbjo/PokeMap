@@ -3,6 +3,7 @@
 
 import logging
 import time
+import math
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i, get_cellid
@@ -30,6 +31,9 @@ def send_map_request(api, position):
         return False
 
 
+def hex_transform(x,y,r,il):
+    return (x+y/2)*r[0]+il[0],(0.886*y)*r[1]+il[1],0
+
 def generate_location_steps(initial_location, num_steps):
     pos, x, y, dx, dy = 1, 0, 0, 0, -1
 
@@ -41,6 +45,36 @@ def generate_location_steps(initial_location, num_steps):
 
         x, y = x + dx, y + dy
 
+def hex_generate_location_steps(il, num_steps):
+    pos, x, y, dx, dy, m = 1, 0., 0., 0, -1, 175
+    conv = float(111111)                            # ~meters per degree
+    r = m/conv, m/conv / math.cos(il[0]*0.0174533)  # Conversion of radius from meters to deg
+    yield hex_transform(x,y,r,il)
+    for n in range(1,num_steps):
+        n+=1
+        for i in range(1, n):
+            x+=1
+            yield hex_transform(x,y,r,il)
+        for i in range(1, n-1):
+            y+=1
+            yield hex_transform(x,y,r,il)
+        for i in range(1, n):
+            x-=1
+            y+=1
+            yield hex_transform(x,y,r,il)
+        for i in range(1, n):
+            x-=1
+            yield hex_transform(x,y,r,il)
+        for i in range(1, n):
+            y-=1
+            yield hex_transform(x,y,r,il)
+        for i in range(1, n):
+            x+=1
+            y-=1
+            yield hex_transform(x,y,r,il)
+    for i in range(1, num_steps):
+        x+=1
+        yield hex_transform(x,y,r,il)
 
 def login(args, position):
     log.info('Attempting login to Pokemon Go.')
@@ -69,8 +103,18 @@ def search(args):
         login(args, position)
 
     i = 1
-    for step_location in generate_location_steps(position, num_steps):
-        log.info('Scanning step {:d} of {:d}.'.format(i, num_steps**2))
+
+
+    if args.hex:
+        log.info("Using hexagonal search algorithm")
+        completion = 3*num_steps**2-3*num_steps+1
+        loc_steps = hex_generate_location_steps(position,num_steps)
+    else:
+        completion = num_steps**2
+        loc_steps = generate_location_steps(position,num_steps)
+
+    for step_location in loc_steps:
+        log.info('Scanning step {:d} of {:d}.'.format(i,completion))
         log.debug('Scan location is {:f}, {:f}'.format(step_location[0], step_location[1]))
 
         response_dict = send_map_request(api, step_location)
@@ -84,7 +128,7 @@ def search(args):
         except KeyError:
             log.error('Scan step failed. Response dictionary key error.')
 
-        log.info('Completed {:5.2f}% of scan.'.format(float(i) / num_steps**2*100))
+        log.info('Completed {:5.2f}% of scan.'.format(float(i) / completion*100))
         i += 1
         time.sleep(REQ_SLEEP)
 
