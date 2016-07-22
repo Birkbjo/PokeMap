@@ -88,10 +88,9 @@ def login(args, position):
     log.info('Login to Pokemon Go successful.')
 
 
-def search(args):
-    num_steps = config['steps']
-    position = (config['ORIGINAL_LATITUDE'], config['ORIGINAL_LONGITUDE'], 0)
-    log.info("Scanning {}".format(position))
+def search(args,pos,num_steps):
+    position = pos
+    log.info("Scanning {}. Steps: {}".format(position,num_steps))
     if api._auth_provider and api._auth_provider._ticket_expire:
         remaining_time = api._auth_provider._ticket_expire/1000 - time.time()
 
@@ -143,9 +142,9 @@ def search_loop(args,num_threads,tId = 0):
             if i >= len(config['locs']):
                 log.info("Not enough locations for this thread. Search ended.")
                 return
-        config['ORIGINAL_LATITUDE'] = config['locs'][i][0]
-        config['ORIGINAL_LONGITUDE'] = config['locs'][i][1]
-        search(args);
+        lat = config['ORIGINAL_LATITUDE'] = config['locs'][i][0]
+        lng = config['ORIGINAL_LONGITUDE'] = config['locs'][i][1]
+        search(args,(lat,lng,0),args.step_limit)
         log.info("Scanning complete.")
         i = i+1 if i < len(config['locs']) -1 else 0
-        time.sleep(1)
+        time.sleep(120)

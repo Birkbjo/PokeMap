@@ -30,12 +30,13 @@ def get_args():
     parser.add_argument('-H', '--host', help='Set web server listening host', default='127.0.0.1')
     parser.add_argument('-P', '--port', type=int, help='Set web server listening port', default=5000)
     parser.add_argument('-L', '--locale', help='Locale for Pokemon names: default en, check'
-                        'locale folder for more options', default='en')
+                                               'locale folder for more options', default='en')
     parser.add_argument('-c', '--china', help='Coordinates transformer for China', action='store_true')
     parser.add_argument('-d', '--debug', help='Debug Mode', action='store_true')
     parser.add_argument('-m', '--mock', help='Mock mode. Starts the web server but not the background thread.', action='store_true', default=False)
     parser.add_argument('-k', '--google-maps-key', help='Google Maps Javascript API Key', default=None, dest='gmaps_key')
     parser.add_argument('--hex', help='Uses the hexagon spiral algorithm.', action='store_true',default=False)
+    parser.add_argument('-ns','--no-search', help='Does not start a search from location, only when map is clickked.', action='store_true',default=False)
     parser.set_defaults(DEBUG=False)
     args = parser.parse_args()
 

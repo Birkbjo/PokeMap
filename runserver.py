@@ -17,15 +17,16 @@ from pogom.pgoapi.utilities import get_pos_by_name
 
 log = logging.getLogger(__name__)
 
-
-def start_locator_thread(args):
+def start_locator_thread(argz):
     num_t = 1
     for i in range(0,num_t):
-        search_thread = Thread(target=search_loop, args=(args,num_t,i))
+
+        search_thread = Thread(target=search_loop, args=(argz,num_t,i))
         search_thread.daemon = True
         search_thread.name = 'search_thread {}'.format(i)
         search_thread.start()
         time.sleep(1)
+
 
 
 if __name__ == '__main__':
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     logging.getLogger("pogom.pgoapi.rpc_api").setLevel(logging.INFO)
 
     args = get_args()
-
+    config['ARGS'] = args
     if args.debug:
         logging.getLogger("requests").setLevel(logging.DEBUG)
         logging.getLogger("pgoapi").setLevel(logging.DEBUG)
@@ -47,6 +48,7 @@ if __name__ == '__main__':
 
     locs = load_locs(os.path.dirname(os.path.realpath(__file__)))['locs']
     creds = load_credentials(os.path.dirname(os.path.realpath(__file__)))
+
     if args.location:
         pos = get_pos_by_name(args.location)
         config['locs'].append(pos)
@@ -65,10 +67,10 @@ if __name__ == '__main__':
         args.password = user1['pass']
         log.debug("Loaded user {} from file".format(user1['name']))
 
-    if not args.mock:
-        start_locator_thread(args)
-    else:
+    if args.mock:
         insert_mock_data()
+    if not args.no_search:
+        start_locator_thread(args)
 
     app = Pogom(__name__)
     config['ROOT_PATH'] = app.root_path
@@ -76,4 +78,5 @@ if __name__ == '__main__':
         config['GMAPS_KEY'] = args.gmaps_key
     else:
         config['GMAPS_KEY'] = creds['gmaps_key']
+    log.info("Server started")
     app.run(threaded=True, debug=args.debug, host=args.host, port=args.port)

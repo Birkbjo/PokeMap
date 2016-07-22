@@ -5,13 +5,17 @@ import calendar
 from flask import Flask, jsonify, render_template, request
 from flask.json import JSONEncoder
 from datetime import datetime
-
+from .search import search
+from threading import Thread,current_thread
 from . import config
 from .models import Pokemon, Gym, Pokestop
+
 import logging
+
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 log = logging.getLogger(__name__)
+
 class Pogom(Flask):
     def __init__(self, import_name, **kwargs):
         super(Pogom, self).__init__(import_name, **kwargs)
@@ -27,7 +31,6 @@ class Pogom(Flask):
                                gmaps_key=config['GMAPS_KEY'])
 
     def raw_data(self):
-        log.info(config['locs'])
         d = {}
         if request.args.get('pokemon', 'true') == 'true':
             d['pokemons'] = Pokemon.get_active()
@@ -41,28 +44,21 @@ class Pogom(Flask):
         return jsonify(d)
 
     def next_loc(self):
-        log.info(config['locs'])
-        content = request.get_json(force=True,silent=False)
-        log.info(content)
-        lat = float(request.get_json(force=True,silent=True).get('lat',''))
-        lon = float(request.get_json(force=True).get('lon',''))
-        log.info("parsed json")
-        #lon = request.args.get('lon', type=float)
-        #steps = request.args.get('steps',type=int)
-        steps = int(request.get_json().get('steps',''))
-
-        log.info("Got {},{} steps ".format(lat,lon,steps))
-        if not (lat and lon):
+        try:
+            lat = float(request.get_json(force=True,silent=True).get('lat',''))
+            lon = float(request.get_json(force=True).get('lon',''))
+            steps = int(request.get_json().get('steps',''))
+        except:
             log.error('[-] Invalid next location: %s,%s' % (lat, lon))
             return 'bad parameters', 400
-        else:
-            del config['locs'][:]
-            config['locs'].append((lat,lon))
-            log.info(config['locs'])
-            if steps:
-                config['steps'] = steps
-            print "UPDATED LOC"
-            return 'ok'
+
+        log.info("Got {},{} steps ".format(lat,lon,steps))
+
+        search_thread = Thread(target=search, args=(config['ARGS'],(lat,lon,0),steps))
+        search_thread.daemon = True
+        search_thread.name = 'scan_thread {}'.format(current_thread().ident)
+        search_thread.start()
+        return 'ok'
 
 
 class CustomJSONEncoder(JSONEncoder):

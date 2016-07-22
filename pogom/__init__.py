@@ -10,6 +10,7 @@ config = {
     'GMAPS_KEY': None,
     'locs': [],
     'users': [],
-    'steps':5
+    'steps':5,
+    'ARGS': None
 
 }

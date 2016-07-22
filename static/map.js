@@ -19,46 +19,90 @@ function initMap() {
         animation: google.maps.Animation.DROP
     });
 
-    google.maps.event.addListener(map,'click', function(event) {
-        if(placeMarker) {
+    google.maps.event.addListener(map, 'click', function (event) {
+        if (placeMarker) {
             placeMarker.setPosition(event.latLng);
         } else {
-            var markImg = {
-                url: 'http://www.clker.com/cliparts/q/I/Q/u/Z/1/marker.svg',
-                scaledSize: new google.maps.Size(50,50)
-            };
-            placeMarker = new google.maps.Marker({
-                position:event.latLng,
-                map:map,
-                icon: markImg
-            });
+            setupPlaceMarker(map, event);
         }
-        var step = document.getElementById("steps").value;
-        $.ajax({
-            url: "next_loc",
-            type: 'POST',
-            data: JSON.stringify({
-                'lat': JSON.stringify(event.latLng.lat()),
-                'lon': JSON.stringify(event.latLng.lng()),
-                'steps': step
-            }),
-            contentType:"application/json; charset=utf-8",
-            dataType: "json",
 
-            success: function(res) {
-                console.log(result);
-                placeMarker.setPosition(event.latLng);
-            },
-            error: function (err) {
-                console.log(err)
-            }
-        });
-
-        map.panTo(placeMarker.getPosition());
     });
 
-};
+    var customControlDiv = document.createElement('div');
+    var control = new CustomControls(customControlDiv,map);
+    customControlDiv.index = 5;
+    map.controls[google.maps.ControlPosition.RIGHT_TOP].push(customControlDiv);
+}
 
+function setupPlaceMarker(map,event) {
+    var markImg = {
+        url: 'http://www.clker.com/cliparts/q/I/Q/u/Z/1/marker.svg',
+        scaledSize: new google.maps.Size(50,50)
+    };
+    placeMarker = new google.maps.Marker({
+        position:event.latLng,
+        map:map,
+        icon: markImg
+    });
+}
+
+function scanPlace() {
+    var step = document.getElementById("steps").value;
+    if(!placeMarker) return;
+    $.ajax({
+        url: "next_loc",
+        type: 'POST',
+        data: JSON.stringify({
+            'lat': JSON.stringify(placeMarker.getPosition().lat()),
+            'lon': JSON.stringify(placeMarker.getPosition().lng()),
+            'steps': step
+        }),
+        contentType:"application/json; charset=utf-8",
+        dataType: "json",
+
+        success: function(res) {
+            console.log(result);
+            placeMarker.setPosition(event.latLng);
+        },
+        error: function (err) {
+            console.log(err)
+        }
+    });
+
+    map.panTo(placeMarker.getPosition());
+}
+
+function CustomControls(controlDiv,map) {
+    // Set CSS for the control border.
+    var controlUI = document.createElement('div');
+    controlUI.style.backgroundColor = '#3b3b3b';
+    controlUI.style.border = '0px solid #fff';
+    controlUI.style.borderRadius = '0px';
+    controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+    controlUI.style.cursor = 'pointer';
+    controlUI.style.marginTop = '50px';
+    controlUI.style.textAlign = 'center';
+    controlUI.title = 'Click to scan at blue marker position';
+    controlDiv.appendChild(controlUI);
+
+    // Set CSS for the control interior.
+    var controlText = document.createElement('div');
+    controlText.style.color = '#fff';
+    controlText.style.fontFamily = 'Arial, Helvetica,sans-serif';
+    controlText.style.fontSize = '1.25em';
+    controlText.style.fontWeight = 'bold';
+    controlText.style.lineHeight = '38px';
+    controlText.style.paddingLeft = '5px';
+    controlText.style.paddingRight = '5px';
+    controlText.innerHTML = 'Scan';
+    controlUI.appendChild(controlText);
+
+    // Setup the click event listeners: simply set the map to Chicago.
+    controlUI.addEventListener('click', function() {
+        scanPlace();
+    });
+
+}
 
 function pokemonLabel(name, disappear_time, id, disappear_time, latitude, longitude) {
     disappear_date = new Date(disappear_time)
