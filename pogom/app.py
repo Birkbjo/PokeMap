@@ -109,17 +109,19 @@ class Pogom(Flask):
         if request.args:
             lat = request.args.get('lat', type=float)
             lon = request.args.get('lon', type=float)
+            steps = request.args.get('steps',type=int)
         # from post requests
         if request.form:
             lat = request.form.get('lat', type=float)
             lon = request.form.get('lon', type=float)
+            steps = request.args.get('steps',type=int)
 
         if not (lat and lon):
             log.warning('Invalid next location: %s,%s' % (lat, lon))
             return 'bad parameters', 400
         else:
             log.info('New scan - location: %s,%s' % (lat, lon))
-            search_thread = Thread(target=search, args=(argz,0, (lat, lon),))
+            search_thread = Thread(target=search, args=(argz,0, (lat, lon),steps))
             search_thread.daemon = True
             search_thread.name = 'scan_thread {}'.format(current_thread().ident)
             search_thread.start()

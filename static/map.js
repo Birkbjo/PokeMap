@@ -182,7 +182,7 @@ function scanPlace() {
     if(!placeMarker) return;
     var lat = placeMarker.getPosition().lat();
     var lng = placeMarker.getPosition().lng();
-    $.post("new_scan?lat=" + lat + "&lon=" + lng, {}).done(function(e) {
+    $.post("new_scan?lat=" + lat + "&lon=" + lng + "&steps="+step, {}).done(function(e) {
         console.log(e);
        // placeMarker.setPosition(event.latLng);
     }).fail(function(e) {

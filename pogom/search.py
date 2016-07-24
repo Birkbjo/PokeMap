@@ -177,8 +177,11 @@ def process_search_threads(search_threads, curr_steps, total_steps):
         log.info('Completed {:5.2f}% of scan.'.format(float(curr_steps) / total_steps*100))
     return curr_steps
 
-def search(args, i,pos=None):
-    num_steps = args.step_limit
+def search(args, i,pos=None,num_steps=None):
+    if not num_steps:
+        num_steps = args.step_limit
+    log.info("Scanning with steps {}".format(num_steps))
+
     total_steps = (3 * (num_steps**2)) - (3 * num_steps) + 1
     if pos:
         position = (pos[0], pos[1], 0)
@@ -227,6 +230,7 @@ def search_loop(args):
     # This seems appropriate
     except Exception as e:
         log.info('Crashed, waiting {:d} seconds before restarting search.'.format(args.scan_delay))
+        log.error(e)
         time.sleep(args.scan_delay)
         search_loop(args)
 
