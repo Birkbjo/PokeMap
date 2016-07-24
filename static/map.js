@@ -67,7 +67,7 @@ function initMap() {
         mapTypeControl: true,
         mapTypeControlOptions: {
         style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-            position: google.maps.ControlPosition.RIGHT_TOP,
+            position: google.maps.ControlPosition.TOP_RIGHT,
             mapTypeIds: [
             google.maps.MapTypeId.ROADMAP,
             google.maps.MapTypeId.SATELLITE,
@@ -104,7 +104,7 @@ function initMap() {
     });
 
     if (!localStorage['map_style'] || localStorage['map_style'] === 'undefined') {
-        localStorage['map_style'] = 'roadmap';
+        localStorage['map_style'] = 'style_pgo';
     }
 
     map.setMapTypeId(localStorage['map_style']);
@@ -196,7 +196,7 @@ function scanPlace() {
 function CustomControls(controlDiv,map) {
     // Set CSS for the control border.
     var controlUI = document.createElement('div');
-    controlUI.style.backgroundColor = '#3b3b3b';
+    controlUI.style.backgroundColor = '#fff';
     controlUI.style.border = '0px solid #fff';
     controlUI.style.borderRadius = '0px';
     controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
@@ -208,7 +208,7 @@ function CustomControls(controlDiv,map) {
 
     // Set CSS for the control interior.
     var controlText = document.createElement('div');
-    controlText.style.color = '#fff';
+    controlText.style.color = '#000';
     controlText.style.fontFamily = 'Arial, Helvetica,sans-serif';
     controlText.style.fontSize = '1.25em';
     controlText.style.fontWeight = 'bold';
