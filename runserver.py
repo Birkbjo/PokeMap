@@ -2,81 +2,95 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import logging
 import time
 
 from threading import Thread
+from flask_cors import CORS, cross_origin
 
 from pogom import config
 from pogom.app import Pogom
-from pogom.utils import get_args, insert_mock_data, load_credentials,load_locs
-from pogom.search import search_loop
-from pogom.models import create_tables, Pokemon, Pokestop, Gym
+from pogom.utils import get_args, insert_mock_data, load_credentials
+from pogom.search import search_loop, create_search_threads
+from pogom.models import init_database, create_tables, Pokemon, Pokestop, Gym
 
 from pogom.pgoapi.utilities import get_pos_by_name
 
 log = logging.getLogger(__name__)
 
-def start_locator_thread(argz):
-    num_t = 1
-    for i in range(0,num_t):
+search_thread = Thread()
 
-        search_thread = Thread(target=search_loop, args=(argz,num_t,i))
-        search_thread.daemon = True
-        search_thread.name = 'search_thread {}'.format(i)
-        search_thread.start()
-        time.sleep(1)
-
+def start_locator_thread(args):
+    search_thread = Thread(target=search_loop, args=(args,))
+    search_thread.daemon = True
+    search_thread.name = 'search_thread'
+    search_thread.start()
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(module)11s] %(threadName)s [%(levelname)7s] %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(module)11s] [%(levelname)7s] %(message)s')
 
     logging.getLogger("peewee").setLevel(logging.INFO)
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("pogom.pgoapi.pgoapi").setLevel(logging.WARNING)
     logging.getLogger("pogom.pgoapi.rpc_api").setLevel(logging.INFO)
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
     args = get_args()
-    config['ARGS'] = args
+
+    config['parse_pokemon'] = not args.no_pokemon
+    config['parse_pokestops'] = not args.no_pokestops
+    config['parse_gyms'] = not args.no_gyms
+
     if args.debug:
         logging.getLogger("requests").setLevel(logging.DEBUG)
         logging.getLogger("pgoapi").setLevel(logging.DEBUG)
         logging.getLogger("rpc_api").setLevel(logging.DEBUG)
 
-    create_tables()
+    db = init_database()
+    create_tables(db)
 
-    locs = load_locs(os.path.dirname(os.path.realpath(__file__)))['locs']
-    creds = load_credentials(os.path.dirname(os.path.realpath(__file__)))
+    position = get_pos_by_name(args.location)
+    if not any(position):
+        log.error('Could not get a position by name, aborting.')
+        sys.exit()
 
-    if args.location:
-        pos = get_pos_by_name(args.location)
-        config['locs'].append(pos)
+    log.info('Parsed location is: {:.4f}/{:.4f}/{:.4f} (lat/lng/alt)'.
+             format(*position))
+    if args.no_pokemon:
+        log.info('Parsing of Pokemon disabled.')
+    if args.no_pokestops:
+        log.info('Parsing of Pokestops disabled.')
+    if args.no_gyms:
+        log.info('Parsing of Gyms disabled.')
 
-    for l in locs:
-        pos = get_pos_by_name(l)
-        config['locs'].append(pos)
-
-    config['steps'] = args.step_limit
+    config['ORIGINAL_LATITUDE'] = position[0]
+    config['ORIGINAL_LONGITUDE'] = position[1]
     config['LOCALE'] = args.locale
+    config['CHINA'] = args.china
 
-    if not args.username or not args.password:
-        user1 = creds['users'][0]
-        args.username = user1['name']
-        args.auth_service = user1['type']
-        args.password = user1['pass']
-        log.debug("Loaded user {} from file".format(user1['name']))
-
-    if args.mock:
-        insert_mock_data()
-    if not args.no_search:
-        start_locator_thread(args)
+    if not args.only_server:
+        create_search_threads(args.num_threads)
+        if not args.mock:
+            start_locator_thread(args)
+        else:
+            insert_mock_data()
 
     app = Pogom(__name__)
+
+    if args.cors:
+        CORS(app);
+
     config['ROOT_PATH'] = app.root_path
     if args.gmaps_key is not None:
         config['GMAPS_KEY'] = args.gmaps_key
     else:
-        config['GMAPS_KEY'] = creds['gmaps_key']
-    log.info("Server started")
-    app.run(threaded=True, debug=args.debug, host=args.host, port=args.port)
+        config['GMAPS_KEY'] = load_credentials(os.path.dirname(os.path.realpath(__file__)))['gmaps_key']
+
+    if args.no_server:
+        while not search_thread.isAlive():
+            time.sleep(1)
+        search_thread.join()
+    else:
+        app.run(threaded=True, debug=args.debug, host=args.host, port=args.port)

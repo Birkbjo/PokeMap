@@ -4,6 +4,8 @@
 import logging
 import time
 import math
+from threading import Thread, Lock
+from queue import Queue
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i, get_cellid
@@ -14,8 +16,22 @@ from .models import parse_map
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
-REQ_SLEEP = 1
 api = PGoApi()
+
+#Constants for Hex Grid
+#Gap between vertical and horzonal "rows"
+lat_gap_meters = 150
+lng_gap_meters = 86.6
+
+#111111m is approx 1 degree Lat, which is close enough for this
+meters_per_degree = 111111
+lat_gap_degrees = float(lat_gap_meters) / meters_per_degree
+
+search_queue = Queue(config['SEARCH_QUEUE_DEPTH'])
+lock = Lock()
+
+def calculate_lng_degrees(lat):
+    return float(lng_gap_meters) / (meters_per_degree * math.cos(math.radians(lat)))
 
 
 def send_map_request(api, position):
@@ -27,7 +43,7 @@ def send_map_request(api, position):
                             cell_id=get_cellid(position[0], position[1]))
         return api.call()
     except Exception as e:
-        log.warn("Uncaught exception when downloading map "+ e)
+        log.warning("Uncaught exception when downloading map " + str(e))
         return False
 
 
@@ -35,15 +51,46 @@ def hex_transform(x,y,r,il):
     return (x+y/2)*r[0]+il[0],(0.886*y)*r[1]+il[1],0
 
 def generate_location_steps(initial_location, num_steps):
-    pos, x, y, dx, dy = 1, 0, 0, 0, -1
 
-    while -num_steps / 2 < x <= num_steps / 2 and -num_steps / 2 < y <= num_steps / 2:
-        yield (x * 0.0025 + initial_location[0], y * 0.0025 + initial_location[1], 0)
+    ring = 1 #Which ring are we on, 0 = center
+    lat_location = initial_location[0]
+    lng_location = initial_location[1]
 
-        if x == y or (x < 0 and x == -y) or (x > 0 and x == 1 - y):
-            dx, dy = -dy, dx
+    yield (initial_location[0],initial_location[1], 0) #Middle circle
 
-        x, y = x + dx, y + dy
+    while ring < num_steps:
+        #Move the location diagonally to top left spot, then start the circle which will end up back here for the next ring
+        #Move Lat north first
+        lat_location += lat_gap_degrees
+        lng_location -= calculate_lng_degrees(lat_location)
+
+        for direction in range(6):
+            for i in range(ring):
+                if direction == 0: #Right
+                    lng_location += calculate_lng_degrees(lat_location) * 2
+
+                if direction == 1: #Right Down
+                    lat_location -= lat_gap_degrees
+                    lng_location += calculate_lng_degrees(lat_location)
+
+                if direction == 2: #Left Down
+                    lat_location -= lat_gap_degrees
+                    lng_location -= calculate_lng_degrees(lat_location)
+
+                if direction == 3: #Left
+                    lng_location -= calculate_lng_degrees(lat_location) * 2
+
+                if direction == 4: #Left Up
+                    lat_location += lat_gap_degrees
+                    lng_location -= calculate_lng_degrees(lat_location)
+
+                if direction == 5: #Right Up
+                    lat_location += lat_gap_degrees
+                    lng_location += calculate_lng_degrees(lat_location)
+
+                yield (lat_location, lng_location, 0) #Middle circle
+
+        ring += 1
 
 def hex_generate_location_steps(il, num_steps):
     pos, x, y, dx, dy, m = 1, 0., 0., 0, -1, 175
@@ -83,14 +130,61 @@ def login(args, position):
 
     while not api.login(args.auth_service, args.username, args.password):
         log.info('Failed to login to Pokemon Go. Trying again.')
-        time.sleep(REQ_SLEEP)
+        time.sleep(config['REQ_SLEEP'])
 
     log.info('Login to Pokemon Go successful.')
 
+def create_search_threads(num) :
+    search_threads = []
+    for i in range(num):
+        t = Thread(target=search_thread, name='search_thread {}'.format(i), args=( search_queue,))
+        t.daemon = True
+        t.start()
+        search_threads.append(t)
 
-def search(args,pos,num_steps):
-    position = pos
-    log.info("Scanning {}. Steps: {}".format(position,num_steps))
+def search_thread(args):
+    queue = args
+    while True:
+        i, total_steps, step_location, step, lock = queue.get()
+        log.debug("Search queue depth is: " + str(queue.qsize()))
+        response_dict = {}
+        failed_consecutive = 0
+        while not response_dict:
+            response_dict = send_map_request(api, step_location)
+            if response_dict:
+                with lock:
+                    try:
+                        parse_map(response_dict, i, step, step_location)
+                    except KeyError:
+                        log.error('Scan step {:d} failed. Response dictionary key error.'.format(step))
+                        failed_consecutive += 1
+                        if(failed_consecutive >= config['REQ_MAX_FAILED']):
+                            log.error('Niantic servers under heavy load. Waiting before trying again')
+                            time.sleep(config['REQ_HEAVY_SLEEP'])
+                            failed_consecutive = 0
+                        response_dict = {}
+            else:
+                log.info('Map Download failed. Trying again.')
+
+        time.sleep(config['REQ_SLEEP'])
+
+def process_search_threads(search_threads, curr_steps, total_steps):
+    for thread in search_threads:
+        thread.start()
+    for thread in search_threads:
+        curr_steps += 1
+        thread.join()
+        log.info('Completed {:5.2f}% of scan.'.format(float(curr_steps) / total_steps*100))
+    return curr_steps
+
+def search(args, i,pos=None):
+    num_steps = args.step_limit
+    total_steps = (3 * (num_steps**2)) - (3 * num_steps) + 1
+    if pos:
+        position = (pos[0], pos[1], 0)
+    else:
+        position = (config['ORIGINAL_LATITUDE'],config['ORIGINAL_LONGITUDE'],0)
+
     if api._auth_provider and api._auth_provider._ticket_expire:
         remaining_time = api._auth_provider._ticket_expire/1000 - time.time()
 
@@ -101,50 +195,38 @@ def search(args,pos,num_steps):
     else:
         login(args, position)
 
-    i = 1
 
+    search_threads = []
+    curr_steps = 0
+    max_threads = args.num_threads
 
-    if args.hex:
-        log.info("Using hexagonal search algorithm")
-        completion = 3*num_steps**2-3*num_steps+1
-        loc_steps = hex_generate_location_steps(position,num_steps)
-    else:
-        completion = num_steps**2
-        loc_steps = generate_location_steps(position,num_steps)
+    for step, step_location in enumerate(generate_location_steps(position, num_steps), 1):
+        if 'NEXT_LOCATION' in config:
+            log.info('New location found. Starting new scan.')
+            config['ORIGINAL_LATITUDE'] = config['NEXT_LOCATION']['lat']
+            config['ORIGINAL_LONGITUDE'] = config['NEXT_LOCATION']['lon']
+            config.pop('NEXT_LOCATION', None)
+            search(args, i)
+            return
 
-    for step_location in loc_steps:
-        log.info('Scanning step {:d} of {:d}.'.format(i,completion))
-        log.debug('Scan location is {:f}, {:f}'.format(step_location[0], step_location[1]))
+        search_args = ( i, total_steps, step_location, step, lock)
+        search_queue.put(search_args)
 
-        response_dict = send_map_request(api, step_location)
-        while not response_dict:
-            log.info('Map Download failed. Trying again.')
-            response_dict = send_map_request(api, step_location)
-            time.sleep(REQ_SLEEP)
+def search_loop(args):
+    i = 0
+    try:
+        while True:
+            log.info("Map iteration: {}".format(i))
+            search(args, i,(config['ORIGINAL_LATITUDE'],config['ORIGINAL_LONGITUDE']))
+            log.info("Scanning complete.")
+            if args.scan_delay > 1:
+                log.info('Waiting {:d} seconds before beginning new scan.'.format(args.scan_delay))
+                time.sleep(args.scan_delay)
+            i += 1
 
-        try:
-            parse_map(response_dict)
-        except KeyError:
-            log.error('Scan step failed. Response dictionary key error.')
+    # This seems appropriate
+    except Exception as e:
+        log.info('Crashed, waiting {:d} seconds before restarting search.'.format(args.scan_delay))
+        time.sleep(args.scan_delay)
+        search_loop(args)
 
-        log.info('Completed {:5.2f}% of scan.'.format(float(i) / completion*100))
-        i += 1
-        time.sleep(REQ_SLEEP)
-
-
-def search_loop(args,num_threads,tId = 0):
-
-
-    i = 0;
-    while True:
-        if num_threads > 1:
-            i = tId
-            if i >= len(config['locs']):
-                log.info("Not enough locations for this thread. Search ended.")
-                return
-        lat = config['ORIGINAL_LATITUDE'] = config['locs'][i][0]
-        lng = config['ORIGINAL_LONGITUDE'] = config['locs'][i][1]
-        search(args,(lat,lng,0),args.step_limit)
-        log.info("Scanning complete.")
-        i = i+1 if i < len(config['locs']) -1 else 0
-        time.sleep(120)
