@@ -13,11 +13,13 @@ from pgoapi.utilities import f2i, get_cellid
 
 from . import config
 from .models import parse_map
+from alarm.notifications import Notifications
 
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 api = PGoApi()
+alarms = Notifications()
 
 #Constants for Hex Grid
 #Gap between vertical and horzonal "rows"
