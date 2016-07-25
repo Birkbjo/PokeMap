@@ -259,7 +259,7 @@ function initMap() {
     map.mapTypes.set('style_pgo_nl', style_pgo_nl);
 
     map.addListener('maptypeid_changed', function(s) {
-        localStorage['map_style'] = this.mapTypeId;
+        Store.set('map_style', this.mapTypeId);
     });
 
     map.setMapTypeId(Store.get('map_style'));
@@ -274,8 +274,8 @@ function initMap() {
     });
 
     google.maps.event.addListener(map, 'zoom_changed', function() {
-        redrawPokemon(map_data.pokemons);
-        redrawPokemon(map_data.lure_pokemons);
+     //   redrawPokemon(map_data.pokemons);
+      //  redrawPokemon(map_data.lure_pokemons);
     });
 
     google.maps.event.addListener(map, 'click', function (event) {
@@ -451,6 +451,9 @@ function gymLabel(team_name, team_id, gym_points, latitude, longitude) {
                 <img height='70px' style='padding: 5px;' src='static/forts/${team_name}_large.png'>
             </div>
             <div>
+                Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+            </div>
+            <div>
                 <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}'
                         target='_blank' title='View in Maps'>Get directions</a>
             </div>
@@ -507,7 +510,6 @@ function pokestopLabel(lured, last_modified, active_pokemon_id, latitude, longit
                 Lure expires at ${pad(expire_date.getHours())}:${pad(expire_date.getMinutes())}:${pad(expire_date.getSeconds())}
                 <span class='label-countdown' disappears-at='${expire_time}'>(00m00s)</span></div>
             <div>
-            <div>
                 <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}'
                         target='_blank' title='View in Maps'>Get directions</a>
             </div>`;
@@ -536,10 +538,6 @@ function scannedLabel(last_modified) {
     return contentstring;
 };
 
-// this could use a refactor...
-function calculateSpritePoints(num) {
-    var y = Math.floor((num - 1) / 12);
-    var x = (num - 1) % 12;
 
 function getGoogleSprite(index, sprite, display_height) {
     display_height = Math.max(display_height, 3);
@@ -907,7 +905,7 @@ function updateMap() {
         $.each(result.pokestops, processLuredPokemon);
         $.each(result.gyms, processGyms);
         $.each(result.scanned, processScanned);
-        clearOutOfBoundsMarkers(map_data.pokemons);
+       // clearOutOfBoundsMarkers(map_data.pokemons);
         clearOutOfBoundsMarkers(map_data.lure_pokemons);
         clearOutOfBoundsMarkers(map_data.gyms);
         clearOutOfBoundsMarkers(map_data.pokestops);
@@ -1152,7 +1150,7 @@ $(function () {
           //the search function makes any small movements cause a loop. Need to increase resolution
           if(getPointDistance(marker.getPosition(), (new google.maps.LatLng(lat, lon))) > 40) //changed to 40 from PR notes, less jitter.
           {
-            $.post(baseURL + "/next_loc?lat=" + lat + "&lon=" + lon).done(function(){
+            $.post(baseURL + "/new_scan?lat=" + lat + "&lon=" + lon+"&steps="+document.getElementById("steps").value).done(function(){
               var center = new google.maps.LatLng(lat, lon);
               map.panTo(center);
               marker.setPosition(center);

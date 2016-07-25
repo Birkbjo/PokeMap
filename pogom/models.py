@@ -291,7 +291,7 @@ def parse_map(map_dict, iteration_num, step, step_location):
         log.debug("Upserting {} gyms".format(len(gyms)))
         bulk_upsert(Gym, gyms)
 
-    log.info("Upserted {} pokemon, {} pokestops, and {} gyms".format(
+    log.debug("Upserted {} pokemon, {} pokestops, and {} gyms".format(
       pokemons_upserted,
       pokestops_upserted,
       gyms_upserted))
