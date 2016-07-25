@@ -558,7 +558,7 @@ function getGoogleSprite(index, sprite, display_height) {
     };
 }
 
-function setupPokemonMarker(item) {
+function setupPokemonMarker(item, skipNotification) {
 
     // Scale icon size up with the map exponentially
     var icon_size = 2 + (map.getZoom()-3) * (map.getZoom()-3) * .2 + Store.get('iconSizeModifier');
@@ -583,11 +583,13 @@ function setupPokemonMarker(item) {
     });
 
     if (notifiedPokemon.indexOf(item.pokemon_id) > -1) {
-        if (Store.get('playSound')) {
-          audio.play();
+        if (!skipNotification) {
+            if (Store.get('playSound')) {
+              audio.play();
+            }
+            sendNotification('A wild ' + item.pokemon_name + ' appeared!', 'Click to load map', 'static/icons/' + item.pokemon_id + '.png', item.latitude, item.longitude);
         }
-
-        sendNotification('A wild ' + item.pokemon_name + ' appeared!', 'Click to load map', 'static/icons/' + item.pokemon_id + '.png', item.latitude, item.longitude);
+        // Icons still get a bounce, even on redraw
         marker.setAnimation(google.maps.Animation.BOUNCE);
     }
 
@@ -917,9 +919,10 @@ function updateMap() {
 
 
 function redrawPokemon(pokemon_list) {
+    var skipNotification = true;
     $.each(pokemon_list, function(key, value) {
         var item =  pokemon_list[key];
-        var new_marker = setupPokemonMarker(item);
+        var new_marker = setupPokemonMarker(item, skipNotification);
         item.marker.setMap(null);
         pokemon_list[key].marker = new_marker;
     });
@@ -1107,7 +1110,7 @@ $(function () {
         var pokeList = []
 
         $.each(data, function(key, value) {
-            pokeList.push( { id: key, text: value } );
+            pokeList.push( { id: key, text: value + ' - #' + key } );
             idToPokemon[key] = value;
         });
 
