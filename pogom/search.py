@@ -4,6 +4,7 @@
 import logging
 import time
 import math
+
 from threading import Thread, Lock
 from queue import Queue
 
@@ -48,9 +49,6 @@ def send_map_request(api, position):
         return False
 
 
-def hex_transform(x,y,r,il):
-    return (x+y/2)*r[0]+il[0],(0.886*y)*r[1]+il[1],0
-
 def generate_location_steps(initial_location, num_steps):
 
     ring = 1 #Which ring are we on, 0 = center
@@ -93,36 +91,6 @@ def generate_location_steps(initial_location, num_steps):
 
         ring += 1
 
-def hex_generate_location_steps(il, num_steps):
-    pos, x, y, dx, dy, m = 1, 0., 0., 0, -1, 175
-    conv = float(111111)                            # ~meters per degree
-    r = m/conv, m/conv / math.cos(il[0]*0.0174533)  # Conversion of radius from meters to deg
-    yield hex_transform(x,y,r,il)
-    for n in range(1,num_steps):
-        n+=1
-        for i in range(1, n):
-            x+=1
-            yield hex_transform(x,y,r,il)
-        for i in range(1, n-1):
-            y+=1
-            yield hex_transform(x,y,r,il)
-        for i in range(1, n):
-            x-=1
-            y+=1
-            yield hex_transform(x,y,r,il)
-        for i in range(1, n):
-            x-=1
-            yield hex_transform(x,y,r,il)
-        for i in range(1, n):
-            y-=1
-            yield hex_transform(x,y,r,il)
-        for i in range(1, n):
-            x+=1
-            y-=1
-            yield hex_transform(x,y,r,il)
-    for i in range(1, num_steps):
-        x+=1
-        yield hex_transform(x,y,r,il)
 
 def login(args, position):
     log.info('Attempting login to Pokemon Go.')
@@ -210,6 +178,7 @@ def search(args, i,pos=None,num_steps=None):
             config['ORIGINAL_LATITUDE'] = config['NEXT_LOCATION']['lat']
             config['ORIGINAL_LONGITUDE'] = config['NEXT_LOCATION']['lon']
             config.pop('NEXT_LOCATION', None)
+            search_queue.queue.clear()
             search(args, i)
             return
 
@@ -230,8 +199,6 @@ def search_loop(args):
 
     # This seems appropriate
     except Exception as e:
-        log.info('Crashed, waiting {:d} seconds before restarting search.'.format(args.scan_delay))
-        log.error(e)
+        log.info('{0.__class__.__name__}: {0} - waiting {1} sec(s) before restarting'.format(e, args.scan_delay))
         time.sleep(args.scan_delay)
         search_loop(args)
-
