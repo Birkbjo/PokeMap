@@ -102,10 +102,6 @@ class Pogom(Flask):
     def new_scan(self):
         argz = get_args()
 
-        if argz.fixed_location:
-            return 'Location searching is turned off', 403
-            # part of query string
-
         if request.args:
             lat = request.args.get('lat', type=float)
             lon = request.args.get('lon', type=float)
