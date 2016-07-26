@@ -1,16 +1,17 @@
 import logging
 
-from alarm import Alarm, gmaps_link, pkmn_time_text
+from alarm import Alarm, pkmn_time_text
 from pushbullet import PushBullet
 
 log = logging.getLogger(__name__)
 
 class PB_Alarm(Alarm):
 	
-	def __init__(self, api_key):
+	def __init__(self, api_key,url):
+		Alarm.__init__(self,url)
 		self.client = PushBullet(api_key) 
-		log.info("PB_Alarm intialized.")
-		push = self.client.push_note("PokeAlarm activated!", "We will alert you about pokemon.")
+		log.info("PB_Alarm initialized.")
+		self.client.push_link("Pokemon",url)
 		
 	def pokemon_alert(self, pokemon):
 		notification_text = "A wild " + pokemon['name'].title() + " has appeared!"

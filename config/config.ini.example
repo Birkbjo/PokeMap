@@ -30,3 +30,12 @@ disable_gyms: false
 Google_Maps_API_Key :
 Host: 127.0.0.1
 Port: 5000
+
+[Alarms]
+map_url: maps.google.com
+pb_api_key:
+slack_api_key:
+twilio_sid:
+twilio_auth_token:
+twilio_to_nr:
+twilio_from_nr:

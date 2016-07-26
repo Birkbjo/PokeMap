@@ -211,13 +211,20 @@ function removePokemonMarker(encounter_id) {
 }
 
 function initMap() {
-
+    var locInUrl = getURLParameter('q');
+    var z = 14;
+    if(locInUrl) {
+        var latLng = locInUrl.split(",");
+        center_lat = parseFloat(latLng[0])
+        center_lng = parseFloat(latLng[1]);
+        z = 17;
+    }
     map = new google.maps.Map(document.getElementById('map'), {
         center: {
             lat: center_lat,
             lng: center_lng
         },
-        zoom: 14,
+        zoom: z,
         fullscreenControl: true,
         streetViewControl: false,
 		mapTypeControl: true,
@@ -274,7 +281,7 @@ function initMap() {
     });
 
     google.maps.event.addListener(map, 'zoom_changed', function() {
-     //   redrawPokemon(map_data.pokemons);
+       // redrawPokemon(map_data.pokemons);
       //  redrawPokemon(map_data.lure_pokemons);
     });
 
@@ -561,7 +568,7 @@ function getGoogleSprite(index, sprite, display_height) {
 function setupPokemonMarker(item, skipNotification) {
 
     // Scale icon size up with the map exponentially
-    var icon_size = 2 + (map.getZoom()-3) * (map.getZoom()-3) * .2 + Store.get('iconSizeModifier');
+    var icon_size = 30 + .2 + Store.get('iconSizeModifier');
     var pokemon_index = item.pokemon_id - 1;
     var sprite = pokemon_sprites[Store.get('pokemonIcons')] || pokemon_sprites['highres']
     var icon = getGoogleSprite(pokemon_index, sprite, icon_size);
@@ -1210,3 +1217,7 @@ $(function () {
     });
 
 });
+
+function getURLParameter(name) {
+    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+}

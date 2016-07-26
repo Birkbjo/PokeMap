@@ -31,7 +31,7 @@ meters_per_degree = 111111
 lat_gap_degrees = float(lat_gap_meters) / meters_per_degree
 
 search_queue = Queue(config['SEARCH_QUEUE_DEPTH'])
-lock = Lock()
+loginLock = Lock()
 
 def calculate_lng_degrees(lat):
     return float(lng_gap_meters) / (meters_per_degree * math.cos(math.radians(lat)))
@@ -96,7 +96,6 @@ def generate_location_steps(initial_location, num_steps):
 
 def login(args, position):
     log.info('Attempting login to Pokemon Go.')
-
     api.set_position(*position)
 
     while not api.login(args.auth_service, args.username, args.password):
@@ -137,6 +136,7 @@ def search_thread(args):
                         response_dict = {}
             else:
                 log.info('Map Download failed. Trying again.')
+                time.sleep(1)
 
         time.sleep(config['REQ_SLEEP'])
 
@@ -160,21 +160,18 @@ def search(args, i,pos=None,num_steps=None):
     else:
         position = (config['ORIGINAL_LATITUDE'],config['ORIGINAL_LONGITUDE'],0)
 
-    if api._auth_provider and api._auth_provider._ticket_expire:
-        remaining_time = api._auth_provider._ticket_expire/1000 - time.time()
+    with loginLock:
+        if api._auth_provider and api._auth_provider._ticket_expire:
+            remaining_time = api._auth_provider._ticket_expire/1000 - time.time()
 
-        if remaining_time > 60:
-            log.info("Skipping Pokemon Go login process since already logged in for another {:.2f} seconds".format(remaining_time))
+            if remaining_time > 60:
+                log.info("Skipping Pokemon Go login process since already logged in for another {:.2f} seconds".format(remaining_time))
+            else:
+                login(args, position)
         else:
             login(args, position)
-    else:
-        login(args, position)
 
-
-    search_threads = []
-    curr_steps = 0
-    max_threads = args.num_threads
-
+    lock = Lock()
     for step, step_location in enumerate(generate_location_steps(position, num_steps), 1):
         if 'NEXT_LOCATION' in config:
             log.info('New location found. Starting new scan.')

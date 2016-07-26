@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 from pb_alarm import PB_Alarm
 from slack_alarm import Slack_Alarm
 from twilio_alarm import Twilio_Alarm
-from ..utils import get_pokemon_name
+from ..utils import get_pokemon_name, get_alarm_config
 
 class Notifications:
 
@@ -20,23 +20,27 @@ class Notifications:
 			self.notify_list = settings["pokemon"]
 			self.seen = {}
 			self.alarms = []
+			auth_settings = get_alarm_config()
 			for alarm in alarm_settings:
 				if alarm['active'] == "True" :
 					if alarm['type'] == 'pushbullet' :
-						self.alarms.append(PB_Alarm(alarm['api_key']))
+						self.alarms.append(PB_Alarm(auth_settings['pushbullet'],auth_settings['url']))
 					elif alarm['type'] == 'slack' :
-						self.alarms.append(Slack_Alarm(alarm['api_key'], alarm['channel']))
+						log.info(auth_settings['slack'])
+						self.alarms.append(Slack_Alarm(auth_settings['slack'], alarm['channel']))
 					elif alarm['type'] == 'twilio' :
-						self.alarms.append(Twilio_Alarm(alarm['account_sid'], alarm['auth_token'], alarm['to_number'], alarm['from_number']))
+						twilio_auth = auth_settings['twilio']
+						self.alarms.append(Twilio_Alarm(twilio_auth['account_sid'],
+														twilio_auth['auth_token'],
+														twilio_auth['to_nr'],
+														twilio_auth['from_nr']))
 					else:
 						log.info("Alarm type not found: " + alarm['type'])
-				else:
-					log.info("Alarm not activated: " + alarm['type'])
 			
 				
 	def notify_pkmns(self, pkmn):
 		for id in pkmn:
-			if id not in self.seen:
+			if id not in self.seen and pkmn[id]['disappear_time'] > datetime.utcnow():
 				pkinfo = {
 					'name': get_pokemon_name(pkmn[id]['pokemon_id']),
 					'lat': pkmn[id]['latitude'],

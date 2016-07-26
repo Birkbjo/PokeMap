@@ -1,6 +1,6 @@
 import logging
 
-from alarm import Alarm, gmaps_link, pkmn_time_text
+from alarm import Alarm, pkmn_time_text
 from slacker import Slacker
 
 log = logging.getLogger(__name__)

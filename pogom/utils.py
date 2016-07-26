@@ -53,6 +53,23 @@ def parse_config(args):
 
     return args
 
+def get_alarm_config():
+    verify_config_file_exists('../config/config.ini')
+    Config = ConfigParser.ConfigParser()
+    Config.read(os.path.join(os.path.dirname(__file__), '../config/config.ini'))
+    settings = {}
+    settings['url'] = Config.get('Alarms','map_url')
+    settings['pushbullet'] = Config.get('Alarms','pb_api_key')
+    settings['slack'] = Config.get('Alarms','slack_api_key')
+    twilio = {}
+    twilio["account_sid"] = Config.get('Alarms','twilio_sid')
+    twilio["auth_token"] = Config.get('Alarms','twilio_auth_token')
+    twilio["to_nr"] = Config.get('Alarms','twilio_to_nr')
+    twilio["from_nr"] = Config.get('Alarms','twilio_from_nr')
+    settings['twilio'] = twilio
+    return settings
+
+
 def parse_db_config(args):
     verify_config_file_exists('../config/config.ini')
     Config = ConfigParser.ConfigParser()
