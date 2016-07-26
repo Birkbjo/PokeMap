@@ -18,6 +18,7 @@ var placeMarker;
 var rawDataIsLoading = false;
 var locationMarker;
 var marker;
+var geoWatchPos = null;
 
 var noLabelsStyle=[{featureType:"poi",elementType:"labels",stylers:[{visibility:"off"}]},{"featureType":"all","elementType":"labels.icon","stylers":[{"visibility":"off"}]}];
 var light2Style=[{"elementType":"geometry","stylers":[{"hue":"#ff4400"},{"saturation":-68},{"lightness":-4},{"gamma":0.72}]},{"featureType":"road","elementType":"labels.icon"},{"featureType":"landscape.man_made","elementType":"geometry","stylers":[{"hue":"#0077ff"},{"gamma":3.1}]},{"featureType":"water","stylers":[{"hue":"#00ccff"},{"gamma":0.44},{"saturation":-33}]},{"featureType":"poi.park","stylers":[{"hue":"#44ff00"},{"saturation":-23}]},{"featureType":"water","elementType":"labels.text.fill","stylers":[{"hue":"#007fff"},{"gamma":0.77},{"saturation":65},{"lightness":99}]},{"featureType":"water","elementType":"labels.text.stroke","stylers":[{"gamma":0.11},{"weight":5.6},{"saturation":99},{"hue":"#0091ff"},{"lightness":-86}]},{"featureType":"transit.line","elementType":"geometry","stylers":[{"lightness":-48},{"hue":"#ff5e00"},{"gamma":1.2},{"saturation":-23}]},{"featureType":"transit","elementType":"labels.text.stroke","stylers":[{"saturation":-64},{"hue":"#ff9100"},{"lightness":16},{"gamma":0.47},{"weight":2.7}]}];
@@ -290,7 +291,7 @@ function initMap() {
         if (placeMarker) {
             placeMarker.setPosition(event.latLng);
         } else {
-            setupPlaceMarker(map, event);
+            setupPlaceMarker(map, event.latLng);
         }
 
     });
@@ -333,13 +334,14 @@ function createSearchMarker() {
     return marker;
 }
 
-function setupPlaceMarker(map,event) {
+function setupPlaceMarker(map,latLng) {
+    if(placeMarker) return;
     var markImg = {
         url: 'http://www.clker.com/cliparts/q/I/Q/u/Z/1/marker.svg',
         scaledSize: new google.maps.Size(50,50)
     };
     placeMarker = new google.maps.Marker({
-        position:event.latLng,
+        position:latLng,
         map:map,
         icon: markImg
     });
@@ -988,7 +990,7 @@ function sendNotification(title, text, icon, lat, lng) {
     }
 }
 
-function myLocationButton(map, marker) {
+function myLocationButton(map, locMarker) {
     var locationContainer = document.createElement('div');
 
     var locationButton = document.createElement('button');
@@ -1011,37 +1013,68 @@ function myLocationButton(map, marker) {
     locationIcon.style.height = '18px';
     locationIcon.style.backgroundImage = 'url(static/mylocation-sprite-1x.png)';
     locationIcon.style.backgroundSize = '180px 18px';
-    locationIcon.style.backgroundPosition = '0px 0px';
+    locationIcon.style.backgroundPosition = '-55px 0px';
     locationIcon.style.backgroundRepeat = 'no-repeat';
-    locationIcon.id = 'current-location';
+    locationIcon.id = 'navGeoBtn-icon';
     locationButton.appendChild(locationIcon);
 
+    watchOpts = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    }
+
     locationButton.addEventListener('click', function() {
-        var currentLocation = document.getElementById('current-location');
-        var imgX = '0';
-        var animationInterval = setInterval(function(){
-            if(imgX == '-18') imgX = '0';
-            else imgX = '-18';
-            currentLocation.style.backgroundPosition = imgX+'px 0';
-        }, 500);
-        if(navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-                locationMarker.setVisible(true);
-                locationMarker.setOptions({'opacity': 1});
-                locationMarker.setPosition(latlng);
-                map.setCenter(latlng);
-                clearInterval(animationInterval);
-                currentLocation.style.backgroundPosition = '-144px 0px';
-            });
-        }
-        else{
-            clearInterval(animationInterval);
-            currentLocation.style.backgroundPosition = '0px 0px';
+        var locBtnIcon = document.getElementById("navGeoBtn-icon");
+        //geoWatch enabled and not following, snap to position
+        if(geoWatchPos && !locationMarker.follow) {
+            locBtnIcon.style.backgroundPosition = '-144px 0px';
+            locationMarker.setOptions({'opacity': 1});
+            locationMarker.follow = true;
+            map.panTo(locationMarker.getPosition());
+        } else if (navigator.geolocation && !geoWatchPos) { //not enabled, watch
+            geoWatchPos = navigator.geolocation.watchPosition(success,err,watchOpts);
+            locationMarker.setOptions({'opacity': 1});
+            locationMarker.setVisible(true);
+            locBtnIcon.style.backgroundPosition = '-144px 0px';
+            locationMarker.follow = true;
+        } else { //enabled, unwatch
+            locBtnIcon.style.backgroundPosition = '-36px 0px';
+            navigator.geolocation.clearWatch(geoWatchPos);
+            locationMarker.setVisible(false);
+            locationMarker.follow = false;
+            geoWatchPos = null;
         }
     });
 
+    function success(pos) {
+        var lat = pos.coords.latitude;
+        var lng = pos.coords.longitude;
+        var latlng = new google.maps.LatLng(lat, lng);
+        locationMarker.setPosition(latlng);
+
+        if(locationMarker.follow) {
+            map.panTo(latlng);
+        }
+        setupPlaceMarker(map,latlng);
+        var dist = getPointDistance(placeMarker.getPosition(), latlng)
+        console.log("dist " + dist);
+        var steps = document.getElementById("steps").value;
+        var lim = steps*125;
+        console.log(lim);
+        if (Store.get('geoLocate') && dist > lim) {
+            $.post("new_scan?lat=" + lat + "&lon=" + lng + "&steps=" + steps).done(function () {
+                placeMarker.setPosition(latlng);
+            });
+        }
+    }
+    function err(err) {
+        console.log(err);
+    }
+
     locationContainer.index = 1;
+
+
     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationContainer);
 }
 
@@ -1061,12 +1094,17 @@ function addMyLocationButton() {
         }
     });
     locationMarker.setVisible(false);
+    locationMarker.follow = false;
 
     myLocationButton(map, locationMarker);
 
     google.maps.event.addListener(map, 'dragend', function() {
-        var currentLocation = document.getElementById('current-location');
-        currentLocation.style.backgroundPosition = '0px 0px';
+        var geoLocBtn = document.getElementById('navGeoBtn-icon');
+        if(locationMarker.follow) {
+            geoLocBtn.style.backgroundPosition = '0px 0px';
+            locationMarker.follow = false;
+        }
+
         locationMarker.setOptions({'opacity': 0.5});
     });
 }
@@ -1151,17 +1189,21 @@ $(function () {
     // run interval timers to regularly update map and timediffs
     window.setInterval(updateLabelDiffTime, 1000);
     window.setInterval(updateMap, 5000);
-    window.setInterval(function() {
+    /* window.setInterval(function() {
+
+
       if(navigator.geolocation && Store.get('geoLocate')) {
         navigator.geolocation.getCurrentPosition(function (position){
           var baseURL = location.protocol + "//" + location.hostname + (location.port ? ":"+location.port: "");
           lat = position.coords.latitude;
           lon = position.coords.longitude;
+            var dist = getPointDistance(marker.getPosition(), (new google.maps.LatLng(lat, lon)))
 
+            console.log("distance in interval " + dist);
           //the search function makes any small movements cause a loop. Need to increase resolution
           if(getPointDistance(marker.getPosition(), (new google.maps.LatLng(lat, lon))) > 40) //changed to 40 from PR notes, less jitter.
           {
-            $.post(baseURL + "/new_scan?lat=" + lat + "&lon=" + lon+"&steps="+document.getElementById("steps").value).done(function(){
+            $.post("new_scan?lat=" + lat + "&lon=" + lon+"&steps="+document.getElementById("steps").value).done(function(){
               var center = new google.maps.LatLng(lat, lon);
               map.panTo(center);
               marker.setPosition(center);
@@ -1170,7 +1212,7 @@ $(function () {
 
         });
       }
-    }, 1000);
+    }, 1000); */
 
 
     function buildSwitchChangeListener(data, data_type, storageKey) {
