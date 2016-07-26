@@ -34,7 +34,9 @@ Port: 5000
 [Alarms]
 map_url: http://maps.google.com
 pb_api_key:
+pb_channel
 slack_api_key:
+slack_channel:
 twilio_sid:
 twilio_auth_token:
 twilio_to_nr:

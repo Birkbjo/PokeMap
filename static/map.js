@@ -214,6 +214,7 @@ function initMap() {
     var locInUrl = getURLParameter('q');
     var z = 14;
     if(locInUrl) {
+        Store.set('geoLocate', false);
         var latLng = locInUrl.split(",");
         center_lat = parseFloat(latLng[0])
         center_lng = parseFloat(latLng[1]);

@@ -7,9 +7,13 @@ log = logging.getLogger(__name__)
 
 class PB_Alarm(Alarm):
 	
-	def __init__(self, api_key,url):
+	def __init__(self, api_key,url,channel=None):
 		Alarm.__init__(self,url)
-		self.client = PushBullet(api_key) 
+		self.client = PushBullet(api_key)
+		if channel:
+			log.info(self.client.channels)
+			self.client = self.client.get_channel(channel)
+			self.client.push_note("PokeAlert initialized","Init")
 		log.info("PB_Alarm initialized.")
 		
 	def pokemon_alert(self, pokemon):

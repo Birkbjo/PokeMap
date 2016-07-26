@@ -6,8 +6,7 @@
 		},
 		{
 			"active": "False",
-			"type":"slack",
-			"channel":"#general"
+			"type":"slack"
 		},
 		{
 			"active": "False",

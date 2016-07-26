@@ -24,10 +24,11 @@ class Notifications:
 			for alarm in alarm_settings:
 				if alarm['active'] == "True" :
 					if alarm['type'] == 'pushbullet' :
-						self.alarms.append(PB_Alarm(auth_settings['pushbullet'],auth_settings['url']))
+						pb_auth = auth_settings['pushbullet']
+						self.alarms.append(PB_Alarm(pb_auth['api_key'],auth_settings['url'],pb_auth['channel']))
 					elif alarm['type'] == 'slack' :
-						log.info(auth_settings['slack'])
-						self.alarms.append(Slack_Alarm(auth_settings['slack'], alarm['channel']))
+						slack_auth = auth_settings['slack']
+						self.alarms.append(Slack_Alarm(slack_auth['api_key'], slack_auth['channel']))
 					elif alarm['type'] == 'twilio' :
 						twilio_auth = auth_settings['twilio']
 						self.alarms.append(Twilio_Alarm(twilio_auth['account_sid'],

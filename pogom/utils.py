@@ -59,14 +59,24 @@ def get_alarm_config():
     Config.read(os.path.join(os.path.dirname(__file__), '../config/config.ini'))
     settings = {}
     settings['url'] = Config.get('Alarms','map_url')
-    settings['pushbullet'] = Config.get('Alarms','pb_api_key')
-    settings['slack'] = Config.get('Alarms','slack_api_key')
+
+    pb = {}
+    pb['api_key'] = Config.get('Alarms','pb_api_key')
+    pb['channel'] = Config.get('Alarms','pb_channel')
+
+    slack = {}
+    slack['api_key'] = Config.get('Alarms','slack_api_key')
+    slack['channel'] = Config.get('Alarms','slack_channel')
+
     twilio = {}
     twilio["account_sid"] = Config.get('Alarms','twilio_sid')
     twilio["auth_token"] = Config.get('Alarms','twilio_auth_token')
     twilio["to_nr"] = Config.get('Alarms','twilio_to_nr')
     twilio["from_nr"] = Config.get('Alarms','twilio_from_nr')
+
     settings['twilio'] = twilio
+    settings['pushbullet'] = pb
+    settings['slack'] = slack
     return settings
 
 
