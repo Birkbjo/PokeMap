@@ -11,11 +11,10 @@ class PB_Alarm(Alarm):
 		Alarm.__init__(self,url)
 		self.client = PushBullet(api_key) 
 		log.info("PB_Alarm initialized.")
-		self.client.push_link("Pokemon",url)
 		
 	def pokemon_alert(self, pokemon):
 		notification_text = "A wild " + pokemon['name'].title() + " has appeared!"
-		google_maps_link = gmaps_link(pokemon["lat"], pokemon["lng"])
+		google_maps_link = self.gmaps_link(pokemon["lat"], pokemon["lng"])
 		time_text =  pkmn_time_text(pokemon['disappear_time'])
 		push = self.client.push_link(notification_text, google_maps_link, body=time_text)
 	

@@ -7,8 +7,12 @@ from ..utils import get_pokemon_name
 log = logging.getLogger(__name__)
 
 class Alarm(object):
-	
-	def __init__(self,url="http://maps.google.com"):
+	default_url="http://maps.google.com"
+
+	def __init__(self,url=None):
+		if not url:
+			url = Alarm.default_url
+
 		self.url = url
 		
 	def pokemon_alert(self, pokemon):

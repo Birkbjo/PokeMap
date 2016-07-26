@@ -32,7 +32,7 @@ Host: 127.0.0.1
 Port: 5000
 
 [Alarms]
-map_url: maps.google.com
+map_url: http://maps.google.com
 pb_api_key:
 slack_api_key:
 twilio_sid:
