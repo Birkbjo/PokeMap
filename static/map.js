@@ -209,6 +209,7 @@ function notifyAboutPokemon(id) {
 
 function removePokemonMarker(encounter_id) {
     map_data.pokemons[encounter_id].marker.setMap(null);
+    map_data.pokemons[encounter_id].hidden = true;
 }
 
 function initMap() {
@@ -282,9 +283,10 @@ function initMap() {
         updateMap();
     });
 
-    google.maps.event.addListener(map, 'zoom_changed', function() {
-       // redrawPokemon(map_data.pokemons);
-      //  redrawPokemon(map_data.lure_pokemons);
+    //Mostly interested in pokemon, show these when we move map around
+    //Pokestops/scanned locs etc. gets loaded when updateMap is called
+    google.maps.event.addListener(map, 'bounds_changed', function() {
+        showInBoundsMarkers(map_data.pokemons);
     });
 
     google.maps.event.addListener(map, 'click', function (event) {
@@ -388,7 +390,6 @@ function CustomControls(controlDiv,map) {
     controlText.innerHTML = 'Scan';
     controlUI.appendChild(controlText);
 
-    // Setup the click event listeners: simply set the map to Chicago.
     controlUI.addEventListener('click', function() {
         scanPlace();
     });
@@ -764,6 +765,31 @@ function clearOutOfBoundsMarkers(markers) {
   });
 }
 
+function showInBoundsMarkers(markers) {
+    $.each(markers, function(key, value) {
+        var marker = markers[key].marker;
+        var show = false;
+        if (!markers[key].hidden) {
+            if(typeof marker.getPosition === 'function') {
+                if(map.getBounds().contains(marker.getPosition())) {
+                    show = true;
+                }
+            } else if(typeof marker.getCenter === 'function') {
+                if(map.getBounds().contains(marker.getCenter())) {
+                    show = true;
+                }
+            }
+        }
+
+        if ( show && !markers[key].marker.getMap()) {
+            markers[key].marker.setMap(map);
+        }
+        else if (!show && markers[key].marker.getMap()) {
+            markers[key].marker.setMap(null);
+        }
+    });
+}
+
 function loadRawData() {
     var loadPokemon = Store.get('showPokemon');
     var loadGyms = Store.get('showGyms');
@@ -812,7 +838,9 @@ function processPokemons(i, item) {
     if (!(item.encounter_id in map_data.pokemons) &&
         excludedPokemon.indexOf(item.pokemon_id) < 0) {
         // add marker to map and item to dict
-        if (item.marker) item.marker.setMap(null);
+        if (item.marker) {
+            item.marker.setMap(null);
+        }
         item.marker = setupPokemonMarker(item);
         map_data.pokemons[item.encounter_id] = item;
     }
@@ -829,9 +857,10 @@ function processPokestops(i, item) {
         map_data.pokestops[item.pokestop_id] = item;
     }
     else {
-        item2 = map_data.pokestops[item.pokestop_id];
+        var item2 = map_data.pokestops[item.pokestop_id];
+
         if (!!item.lure_expiration != !!item2.lure_expiration || item.active_pokemon_id != item2.active_pokemon_id) {
-            item.marker.setMap(null);
+            item2.marker.setMap(null);
             item.marker = setupPokestopMarker(item);
             map_data.pokestops[item.pokestop_id] = item;
         }
@@ -919,11 +948,11 @@ function updateMap() {
         $.each(result.pokestops, processLuredPokemon);
         $.each(result.gyms, processGyms);
         $.each(result.scanned, processScanned);
-       // clearOutOfBoundsMarkers(map_data.pokemons);
-        clearOutOfBoundsMarkers(map_data.lure_pokemons);
-        clearOutOfBoundsMarkers(map_data.gyms);
-        clearOutOfBoundsMarkers(map_data.pokestops);
-        clearOutOfBoundsMarkers(map_data.scanned);
+        showInBoundsMarkers(map_data.pokemons);
+        showInBoundsMarkers(map_data.lure_pokemons);
+        showInBoundsMarkers(map_data.gyms);
+        showInBoundsMarkers(map_data.pokestops);
+        showInBoundsMarkers(map_data.scanned);
         clearStaleMarkers();
     });
 };
@@ -1215,31 +1244,6 @@ $(function () {
     // run interval timers to regularly update map and timediffs
     window.setInterval(updateLabelDiffTime, 1000);
     window.setInterval(updateMap, 5000);
-    /* window.setInterval(function() {
-
-
-      if(navigator.geolocation && Store.get('geoLocate')) {
-        navigator.geolocation.getCurrentPosition(function (position){
-          var baseURL = location.protocol + "//" + location.hostname + (location.port ? ":"+location.port: "");
-          lat = position.coords.latitude;
-          lon = position.coords.longitude;
-            var dist = getPointDistance(marker.getPosition(), (new google.maps.LatLng(lat, lon)))
-
-            console.log("distance in interval " + dist);
-          //the search function makes any small movements cause a loop. Need to increase resolution
-          if(getPointDistance(marker.getPosition(), (new google.maps.LatLng(lat, lon))) > 40) //changed to 40 from PR notes, less jitter.
-          {
-            $.post("new_scan?lat=" + lat + "&lon=" + lon+"&steps="+document.getElementById("steps").value).done(function(){
-              var center = new google.maps.LatLng(lat, lon);
-              map.panTo(center);
-              marker.setPosition(center);
-            });
-          }
-
-        });
-      }
-    }, 1000); */
-
 
     function buildSwitchChangeListener(data, data_type, storageKey) {
         return function () {
