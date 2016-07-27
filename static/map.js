@@ -446,7 +446,9 @@ function pokemonLabel(name, disappear_time, id, latitude, longitude, encounter_i
             <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp;
             <a href='javascript:removePokemonMarker("${encounter_id}")'>Remove</a>&nbsp;&nbsp;
             <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}'
-                    target='_blank' title='View in Maps'>Get directions</a>
+                    target='_blank' title='View in Maps'>Get directions</a> &nbsp;&nbsp;
+             <a href='/?q=${latitude},${longitude}'
+                    target='_blank' title='Link in PokeMap'>Share</a>
         </div>`;
     return contentstring;
 }
@@ -1048,23 +1050,38 @@ function myLocationButton(map, locMarker) {
     });
 
     function success(pos) {
+        var forceScan = false;
         var lat = pos.coords.latitude;
         var lng = pos.coords.longitude;
-        var latlng = new google.maps.LatLng(lat, lng);
-        locationMarker.setPosition(latlng);
-
-        if(locationMarker.follow) {
-            map.panTo(latlng);
-        }
-        setupPlaceMarker(map,latlng);
-        var dist = getPointDistance(placeMarker.getPosition(), latlng)
-        console.log("dist " + dist);
         var steps = document.getElementById("steps").value;
+        var latlng = new google.maps.LatLng(lat, lng);
+
+        locationMarker.setPosition(latlng);
+        
+        if(!placeMarker) {
+            setupPlaceMarker(map,latlng);
+        }
+        var distToOld;
+        if(!locationMarker.lastScanTime || !locationMarker.lastScanPos) {
+            forceScan = true;
+            distToOld = 20000;
+        } else {
+            distToOld = getPointDistance(locationMarker.lastScanPos,latlng);
+        }
+        var dist = getPointDistance(placeMarker.getPosition(), latlng)
+
         var lim = steps*125;
-        console.log(lim);
-        if (Store.get('geoLocate') && dist > lim) {
-            $.post("new_scan?lat=" + lat + "&lon=" + lng + "&steps=" + steps).done(function () {
-                placeMarker.setPosition(latlng);
+        var inBounds = (dist > lim && distToOld > lim);
+        var delta = Date.now()-locationMarker.lastScanTime;
+        console.log(forceScan + " " +  delta + " " + inBounds + " " + lim + " " + dist + " old: " + distToOld);
+        if (Store.get('geoLocate') && (forceScan || inBounds || delta > 60000)) {
+            sendNewScanRequest(lat,lng,steps,function() {
+                if(locationMarker.follow) {
+                    placeMarker.setPosition(latlng);
+                    map.panTo(latlng);
+                }
+                locationMarker.lastScanTime = Date.now();
+                locationMarker.lastScanPos = latlng;
             });
         }
     }
@@ -1072,10 +1089,19 @@ function myLocationButton(map, locMarker) {
         console.log(err);
     }
 
+
     locationContainer.index = 1;
 
 
     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationContainer);
+}
+
+function sendNewScanRequest(lat,lng,steps,cb) {
+    $.post("new_scan?lat=" + lat + "&lon=" + lng + "&steps=" + steps).done(function () {
+        if(cb && typeof cb === "function") {
+            cb();
+        }
+    });
 }
 
 function addMyLocationButton() {
