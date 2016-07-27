@@ -1057,7 +1057,7 @@ function myLocationButton(map, locMarker) {
         var latlng = new google.maps.LatLng(lat, lng);
 
         locationMarker.setPosition(latlng);
-        
+
         if(!placeMarker) {
             setupPlaceMarker(map,latlng);
         }
@@ -1074,7 +1074,7 @@ function myLocationButton(map, locMarker) {
         var inBounds = (dist > lim && distToOld > lim);
         var delta = Date.now()-locationMarker.lastScanTime;
         console.log(forceScan + " " +  delta + " " + inBounds + " " + lim + " " + dist + " old: " + distToOld);
-        if (Store.get('geoLocate') && (forceScan || inBounds || delta > 60000)) {
+        if (forceScan || (Store.get('geoLocate') && (inBounds || delta > 60000))) {
             sendNewScanRequest(lat,lng,steps,function() {
                 if(locationMarker.follow) {
                     placeMarker.setPosition(latlng);
