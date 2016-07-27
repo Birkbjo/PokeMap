@@ -953,11 +953,22 @@ function updateMap() {
         showInBoundsMarkers(map_data.gyms);
         showInBoundsMarkers(map_data.pokestops);
         showInBoundsMarkers(map_data.scanned);
+
+        freeOutOfBoundsData(map_data.pokemons,300);
+        freeOutOfBoundsData(map_data.pokestops,200);
+        freeOutOfBoundsData(map_data.scanned,200);
         clearStaleMarkers();
     });
 };
 
-
+//Used to clear markers out of bounds after a certain threshold
+function freeOutOfBoundsData(data,lim) {
+    var len = Object.keys(data).length;
+    console.log(len)
+    if(len > lim) {
+        clearOutOfBoundsMarkers(data);
+    }
+}
 
 function redrawPokemon(pokemon_list) {
     var skipNotification = true;
