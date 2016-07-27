@@ -59,7 +59,7 @@ class Notifications:
 	#clear stale so that the seen set doesn't get too large
 	def clear_stale(self):
 		old = []
-		for id in self.seen:
+		for id in self.seen.keys():
 			if self.seen[id]['disappear_time'] < datetime.utcnow() :
 				old.append(id)
 		for id in old:
