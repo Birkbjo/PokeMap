@@ -19,6 +19,7 @@ from . import config
 from exceptions import APIKeyException
 
 DEFAULT_THREADS = 1
+parsed_args = None
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(module)11s] %(threadName)s [%(levelname)7s] %(message)s')
 log = logging.getLogger(__name__)
@@ -94,6 +95,9 @@ def parse_db_config(args):
 
 def get_args():
     # fuck PEP8
+    global parsed_args
+    if parsed_args:
+        return parsed_args
     parser = argparse.ArgumentParser()
     parser.add_argument('-se', '--settings',action='store_true',default=False)
     parser.add_argument('-a', '--auth-service', type=str.lower, help='Auth Service', default='ptc')
@@ -124,7 +128,6 @@ def get_args():
     args = parser.parse_args()
 
     args = parse_db_config(args)
-
     if (args.settings):
         args = parse_config(args)
     else:
@@ -144,7 +147,7 @@ def get_args():
             elif args.password is None:
                 args.password = config["PASSWORD"]
 
-
+    parsed_args = args
     return args
 
 def insert_mock_data():
