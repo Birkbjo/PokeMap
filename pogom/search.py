@@ -166,7 +166,7 @@ def search_thread(q, api_idx, search_control):
             q.task_done()
             continue
 
-        log.debug("{}: processing itteration {} step {}".format(threadname, i, step))
+        log.debug("{}: processing iteration {} step {}".format(threadname, i, step))
         response_dict = {}
         failed_consecutive = 0
         while not response_dict:
@@ -250,7 +250,7 @@ def search(args, i):
         search_args = (i, step_location, step, lock)
         search_queue.put(search_args)
 
-    # Wait until this scan itteration queue is empty (not nessearily done)
+    #Wait until this scan iteration queue is empty (not necessarily done)
     #while not search_queue.empty():
      #   log.debug("Waiting for current search queue to complete (remaining: {})".format(search_queue.qsize()))
      #   time.sleep(1)
