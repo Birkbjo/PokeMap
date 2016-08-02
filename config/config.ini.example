@@ -28,6 +28,7 @@
 #port:                  # port to listen on (default 5000)
 
 #alarmsettings
+#notifications: false
 #map_url: http://maps.google.com
 #pb_api_key:
 #pb_channel:

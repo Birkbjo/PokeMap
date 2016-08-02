@@ -8,7 +8,6 @@ import uuid
 import os
 import json
 from datetime import datetime, timedelta
-import ConfigParser
 import logging
 import shutil
 import requests
@@ -122,6 +121,17 @@ def get_args():
     parser.add_argument('--db-max_connections', help='Max connections for the database', type=int, default=5)
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
+    parser.add_argument('-n','--notifications',help='Enable notifications',action='store_true',default=False)
+    parser.add_argument('--notification_map_url',help='The url to show a link for in a notification',
+                        default="http://maps.google.com")
+    parser.add_argument('--pb_api_key', help='Api key for pushbullet notifications')
+    parser.add_argument('--pb_channel', help='Channeltag name for pushbullet notifications')
+    parser.add_argument('--slack_api_key', help='Api key for slack notifications')
+    parser.add_argument('--slack_channel', help='Channel name for slack notifications')
+    parser.add_argument('--twilio_sid', help='sid for twilio notifications')
+    parser.add_argument('--twilio_auth_token', help='auth token for twilio notifications')
+    parser.add_argument('--twilio_to_nr', help='To number for twilio notifications')
+    parser.add_argument('--twilio_from_nr', help='From number for twilio notifications')
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -172,25 +182,22 @@ def get_args():
     return args
 
 def get_alarm_config():
-    verify_config_file_exists('../config/config.ini')
-    Config = ConfigParser.ConfigParser()
-    Config.read(os.path.join(os.path.dirname(__file__), '../config/config.ini'))
     settings = {}
-    settings['url'] = Config.get('Alarms','map_url')
+    settings['url'] = parsed_args.notification_map_url
 
     pb = {}
-    pb['api_key'] = Config.get('Alarms','pb_api_key')
-    pb['channel'] = Config.get('Alarms','pb_channel')
+    pb['api_key'] = parsed_args.pb_api_key
+    pb['channel'] = parsed_args.pb_channel
 
     slack = {}
-    slack['api_key'] = Config.get('Alarms','slack_api_key')
-    slack['channel'] = Config.get('Alarms','slack_channel')
+    slack['api_key'] = parsed_args.slack_api_key
+    slack['channel'] = parsed_args.slack_channel
 
     twilio = {}
-    twilio["account_sid"] = Config.get('Alarms','twilio_sid')
-    twilio["auth_token"] = Config.get('Alarms','twilio_auth_token')
-    twilio["to_nr"] = Config.get('Alarms','twilio_to_nr')
-    twilio["from_nr"] = Config.get('Alarms','twilio_from_nr')
+    twilio["account_sid"] = parsed_args.twilio_sid
+    twilio["auth_token"] = parsed_args.twilio_auth_token
+    twilio["to_nr"] =parsed_args.twilio_to_nr
+    twilio["from_nr"] = parsed_args.twilio_from_nr
 
     settings['twilio'] = twilio
     settings['pushbullet'] = pb

@@ -22,6 +22,7 @@ from queue import Queue
 
 from pgoapi import PGoApi
 from pgoapi.utilities import f2i, get_cellid
+from pogom.utils import get_args
 
 from . import config
 from .models import parse_map
@@ -174,7 +175,8 @@ def search_thread(q, api_idx, search_control):
                 with lock:
                     try:
                         pokemons, pokestops, gyms = parse_map(response_dict, i, step, step_location)
-                       # alarms.notify_pkmns(pokemons)
+                        if get_args().notifications:
+                            alarms.notify_pkmns(pokemons)
                         log.debug("{}: itteration {} step {} complete".format(threadname, i, step))
                     except KeyError:
                         log.error('Search thread failed. Response dictionary key error')
