@@ -17,11 +17,9 @@ var excludedPokemon = [];
 var notifiedPokemon = [];
 
 var map;
-var placeMarker;
 var rawDataIsLoading = false;
 var locationMarker;
 var marker;
-var geoWatchPos = null;
 
 var noLabelsStyle=[{featureType:"poi",elementType:"labels",stylers:[{visibility:"off"}]},{"featureType":"all","elementType":"labels.icon","stylers":[{"visibility":"off"}]}];
 var light2Style=[{"elementType":"geometry","stylers":[{"hue":"#ff4400"},{"saturation":-68},{"lightness":-4},{"gamma":0.72}]},{"featureType":"road","elementType":"labels.icon"},{"featureType":"landscape.man_made","elementType":"geometry","stylers":[{"hue":"#0077ff"},{"gamma":3.1}]},{"featureType":"water","stylers":[{"hue":"#00ccff"},{"gamma":0.44},{"saturation":-33}]},{"featureType":"poi.park","stylers":[{"hue":"#44ff00"},{"saturation":-23}]},{"featureType":"water","elementType":"labels.text.fill","stylers":[{"hue":"#007fff"},{"gamma":0.77},{"saturation":65},{"lightness":99}]},{"featureType":"water","elementType":"labels.text.stroke","stylers":[{"gamma":0.11},{"weight":5.6},{"saturation":99},{"hue":"#0091ff"},{"lightness":-86}]},{"featureType":"transit.line","elementType":"geometry","stylers":[{"lightness":-48},{"hue":"#ff5e00"},{"gamma":1.2},{"saturation":-23}]},{"featureType":"transit","elementType":"labels.text.stroke","stylers":[{"saturation":-64},{"hue":"#ff9100"},{"lightness":16},{"gamma":0.47},{"weight":2.7}]}];
@@ -62,7 +60,6 @@ var pokemon_sprites = {
     name: 'High-Res'
   }
 };
-
 
 //
 // LocalStorage helpers
@@ -111,62 +108,66 @@ var StoreTypes = {
 };
 
 var StoreOptions = {
-    map_style: {
-        default: 'roadmap',
-        type: StoreTypes.String
-    },
-    remember_select_exclude: {
-        default: [],
-        type: StoreTypes.JSON
-    },
-    remember_select_notify: {
-        default: [],
-        type: StoreTypes.JSON
-    },
-    showGyms: {
-        default: false,
-        type: StoreTypes.Boolean
-    },
-    showPokemon: {
-        default: true,
-        type: StoreTypes.Boolean
-    },
-    showLuredPokemon: {
-        default: true,
-        type: StoreTypes.Boolean
-    },
-    showPokestops: {
-        default: true,
-        type: StoreTypes.Boolean
-    },
-    showLuredPokestopsOnly: {
-        default: 0,
-        type: StoreTypes.Number
-    },
-    showScanned: {
-        default: false,
-        type: StoreTypes.Boolean
-    },
-    playSound: {
-        default: false,
-        type: StoreTypes.Boolean
-    },
-    geoLocate: {
-        default: false,
-        type: StoreTypes.Boolean
-    },
-    playSound: {
-        default: false,
-        type: StoreTypes.Boolean
-    },
-    pokemonIcons: {
-        default: 'highres',
-        type: StoreTypes.String
-    },
-    iconSizeModifier: {
-        default: 0,
-        type: StoreTypes.Number
-    }
+  map_style: {
+    default: 'roadmap',
+    type: StoreTypes.String
+  },
+  remember_select_exclude: {
+    default: [],
+    type: StoreTypes.JSON
+  },
+  remember_select_notify: {
+    default: [],
+    type: StoreTypes.JSON
+  },
+  showGyms: {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  showPokemon: {
+    default: true,
+    type: StoreTypes.Boolean
+  },
+  showLuredPokemon: {
+    default: true,
+    type: StoreTypes.Boolean
+  },
+  showPokestops: {
+    default: true,
+    type: StoreTypes.Boolean
+  },
+  showLuredPokestopsOnly: {
+    default: 0,
+    type: StoreTypes.Number
+  },
+  showScanned: {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  playSound: {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  geoLocate: {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  startAtUserLocation: {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  playSound: {
+    default: false,
+    type: StoreTypes.Boolean
+  },
+  pokemonIcons: {
+    default: 'highres',
+    type: StoreTypes.String
+  },
+  iconSizeModifier: {
+    default: 0,
+    type: StoreTypes.Number
+  }
 };
 
 var Store = {
@@ -220,96 +221,87 @@ function removePokemonMarker(encounter_id) {
 }
 
 function initMap() {
-    var locInUrl = getURLParameter('q');
-    var z = 14;
-    if(locInUrl) {
-        Store.set('geoLocate', false);
-        var latLng = locInUrl.split(",");
-        center_lat = parseFloat(latLng[0])
-        center_lng = parseFloat(latLng[1]);
-        z = 17;
-    }
-    map = new google.maps.Map(document.getElementById('map'), {
-        center: {
-            lat: center_lat,
-            lng: center_lng
-        },
-        zoom: z,
-        fullscreenControl: true,
-        streetViewControl: false,
-        mapTypeControl: true,
-        mapTypeControlOptions: {
-          style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-          position: google.maps.ControlPosition.RIGHT_TOP,
-          mapTypeIds: [
-              google.maps.MapTypeId.ROADMAP,
-              google.maps.MapTypeId.SATELLITE,
-              'nolabels_style',
-              'dark_style',
-              'style_light2',
-              'style_pgo',
-              'dark_style_nl',
-              'style_light2_nl',
-              'style_pgo_nl']
-        },
-    });
-	
-	var style_NoLabels = new google.maps.StyledMapType(noLabelsStyle, {name: "No Labels"});
-	map.mapTypes.set('nolabels_style', style_NoLabels);
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: {
+      lat: center_lat,
+      lng: center_lng
+    },
+    zoom: 16,
+    fullscreenControl: true,
+    streetViewControl: false,
+    mapTypeControl: false,
+    mapTypeControlOptions: {
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+      position: google.maps.ControlPosition.RIGHT_TOP,
+      mapTypeIds: [
+        google.maps.MapTypeId.ROADMAP,
+        google.maps.MapTypeId.SATELLITE,
+        'nolabels_style',
+        'dark_style',
+        'style_light2',
+        'style_pgo',
+        'dark_style_nl',
+        'style_light2_nl',
+        'style_pgo_nl'
+      ]
+    },
+  });
 
-	var style_dark = new google.maps.StyledMapType(darkStyle, {name: "Dark"});
-	map.mapTypes.set('dark_style', style_dark);
+  var style_NoLabels = new google.maps.StyledMapType(noLabelsStyle, {
+    name: "No Labels"
+  });
+  map.mapTypes.set('nolabels_style', style_NoLabels);
 
-	var style_light2 = new google.maps.StyledMapType(light2Style, {name: "Light2"});
-	map.mapTypes.set('style_light2', style_light2);
+  var style_dark = new google.maps.StyledMapType(darkStyle, {
+    name: "Dark"
+  });
+  map.mapTypes.set('dark_style', style_dark);
 
-	var style_pgo = new google.maps.StyledMapType(pGoStyle, {name: "PokemonGo"});
-	map.mapTypes.set('style_pgo', style_pgo);
+  var style_light2 = new google.maps.StyledMapType(light2Style, {
+    name: "Light2"
+  });
+  map.mapTypes.set('style_light2', style_light2);
 
-    var style_dark_nl = new google.maps.StyledMapType(darkStyleNoLabels, {name: "Dark (No Labels)"});
-    map.mapTypes.set('dark_style_nl', style_dark_nl);
+  var style_pgo = new google.maps.StyledMapType(pGoStyle, {
+    name: "PokemonGo"
+  });
+  map.mapTypes.set('style_pgo', style_pgo);
 
-    var style_light2_nl = new google.maps.StyledMapType(light2StyleNoLabels, {name: "Light2 (No Labels)"});
-    map.mapTypes.set('style_light2_nl', style_light2_nl);
+  var style_dark_nl = new google.maps.StyledMapType(darkStyleNoLabels, {
+    name: "Dark (No Labels)"
+  });
+  map.mapTypes.set('dark_style_nl', style_dark_nl);
 
-    var style_pgo_nl = new google.maps.StyledMapType(pGoStyleNoLabels, {name: "PokemonGo (No Labels)"});
-    map.mapTypes.set('style_pgo_nl', style_pgo_nl);
+  var style_light2_nl = new google.maps.StyledMapType(light2StyleNoLabels, {
+    name: "Light2 (No Labels)"
+  });
+  map.mapTypes.set('style_light2_nl', style_light2_nl);
 
-    map.addListener('maptypeid_changed', function(s) {
-        Store.set('map_style', this.mapTypeId);
-    });
+  var style_pgo_nl = new google.maps.StyledMapType(pGoStyleNoLabels, {
+    name: "PokemonGo (No Labels)"
+  });
+  map.mapTypes.set('style_pgo_nl', style_pgo_nl);
 
-    map.setMapTypeId(Store.get('map_style'));
-    google.maps.event.addListener(map, 'idle', updateMap);
+  map.addListener('maptypeid_changed', function(s) {
+    Store.set('map_style', this.mapTypeId);
+  });
 
-    marker = createSearchMarker();
+  map.setMapTypeId(Store.get('map_style'));
+  google.maps.event.addListener(map, 'idle', updateMap);
 
-    addMyLocationButton();
-    initSidebar();
-    google.maps.event.addListenerOnce(map, 'idle', function(){
-        updateMap();
-    });
+  var marker = createSearchMarker();
 
-    //Mostly interested in pokemon, show these when we move map around
-    //Pokestops/scanned locs etc. gets loaded when updateMap is called
-    google.maps.event.addListener(map, 'bounds_changed', function() {
-        showInBoundsMarkers(map_data.pokemons);
-    });
+  addMyLocationButton();
+  initSidebar();
+  google.maps.event.addListenerOnce(map, 'idle', function() {
+    updateMap();
+  });
 
-    google.maps.event.addListener(map, 'click', function (event) {
-        if (placeMarker) {
-            placeMarker.setPosition(event.latLng);
-        } else {
-            setupPlaceMarker(map, event.latLng);
-        }
-
-    });
-
-    var customControlDiv = document.createElement('div');
-    var control = new CustomControls(customControlDiv,map);
-    customControlDiv.index = 5;
-    map.controls[google.maps.ControlPosition.RIGHT_TOP].push(customControlDiv);
-};
+  google.maps.event.addListener(map, 'zoom_changed', function() {
+    redrawPokemon(map_data.pokemons);
+    redrawPokemon(map_data.lure_pokemons);
+  });
+}
 
 function createSearchMarker() {
   marker = new google.maps.Marker({ //need to keep reference.
@@ -343,77 +335,31 @@ function createSearchMarker() {
   return marker;
 }
 
-function setupPlaceMarker(map,latLng) {
-    if(placeMarker) return;
-    var markImg = {
-        url: 'http://www.clker.com/cliparts/q/I/Q/u/Z/1/marker.svg',
-        scaledSize: new google.maps.Size(50,50)
-    };
-    placeMarker = new google.maps.Marker({
-        position:latLng,
-        map:map,
-        icon: markImg
-    });
+var searchControlURI = 'search_control';
+function searchControl(action) {
+  $.post(searchControlURI + '?action='+encodeURIComponent(action));
 }
-
-function scanPlace() {
-    var step = document.getElementById("steps").value;
-    if(!placeMarker) return;
-    var lat = placeMarker.getPosition().lat();
-    var lng = placeMarker.getPosition().lng();
-    $.post("new_scan?lat=" + lat + "&lon=" + lng + "&steps="+step, {}).done(function(e) {
-        console.log(e);
-       // placeMarker.setPosition(event.latLng);
-    }).fail(function(e) {
-        console.log(e);
-    });
-
-
-    map.panTo(placeMarker.getPosition());
-}
-
-function CustomControls(controlDiv,map) {
-    // Set CSS for the control border.
-    var controlUI = document.createElement('div');
-    controlUI.style.backgroundColor = '#fff';
-    controlUI.style.border = '0px solid #fff';
-    controlUI.style.borderRadius = '0px';
-    controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
-    controlUI.style.cursor = 'pointer';
-    controlUI.style.marginTop = '50px';
-    controlUI.style.textAlign = 'center';
-    controlUI.title = 'Click to scan at blue marker position';
-    controlDiv.appendChild(controlUI);
-
-    // Set CSS for the control interior.
-    var controlText = document.createElement('div');
-    controlText.style.color = '#000';
-    controlText.style.fontFamily = 'Arial, Helvetica,sans-serif';
-    controlText.style.fontSize = '1.25em';
-    controlText.style.fontWeight = 'bold';
-    controlText.style.lineHeight = '38px';
-    controlText.style.paddingLeft = '5px';
-    controlText.style.paddingRight = '5px';
-    controlText.innerHTML = 'Scan';
-    controlUI.appendChild(controlText);
-
-    controlUI.addEventListener('click', function() {
-        scanPlace();
-    });
-
+function updateSearchStatus() {
+  $.getJSON(searchControlURI).then(function(data){
+    $('#search-switch').prop('checked', data.status);
+  })
 }
 
 function initSidebar() {
-    $('#gyms-switch').prop('checked', Store.get('showGyms'));
-    $('#pokemon-switch').prop('checked', Store.get('showPokemon'));
-    $('#pokestops-switch').prop('checked', Store.get('showPokestops'));
-    $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'));
-    $('#lured-pokestops-only-wrapper').toggle(Store.get('showPokestops'));
-    $('#geoloc-switch').prop('checked', Store.get('geoLocate'));
-    $('#scanned-switch').prop('checked', Store.get('showScanned'));
-    $('#sound-switch').prop('checked', Store.get('playSound'));
+  $('#gyms-switch').prop('checked', Store.get('showGyms'));
+  $('#pokemon-switch').prop('checked', Store.get('showPokemon'));
+  $('#pokestops-switch').prop('checked', Store.get('showPokestops'));
+  $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'));
+  $('#lured-pokestops-only-wrapper').toggle(Store.get('showPokestops'));
+  $('#geoloc-switch').prop('checked', Store.get('geoLocate'));
+  $('#start-at-user-location-switch').prop('checked', Store.get('startAtUserLocation'));
+  $('#scanned-switch').prop('checked', Store.get('showScanned'));
+  $('#sound-switch').prop('checked', Store.get('playSound'));
+  var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'));
+  $("#next-location").css("background-color", $('#geoloc-switch').prop('checked') ? "#e0e0e0" : "#ffffff");
 
-    var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'));
+  updateSearchStatus();
+  setInterval(updateSearchStatus,5000);
 
   searchBox.addListener('places_changed', function() {
     var places = searchBox.getPlaces();
@@ -450,7 +396,7 @@ function pokemonLabel(name, rarity, types, disappear_time, id, latitude, longitu
     types_display += getTypeSpan(type);
   });
 
-    var contentstring = `
+  var contentstring = `
     <div>
       <b>${name}</b>
       <span> - </span>
@@ -466,53 +412,66 @@ function pokemonLabel(name, rarity, types, disappear_time, id, latitude, longitu
       <span class='label-countdown' disappears-at='${disappear_time}'>(00m00s)</span>
     </div>
     <div>
+      Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+    </div>
+    <div>
       <a href='javascript:excludePokemon(${id})'>Exclude</a>&nbsp;&nbsp;
       <a href='javascript:notifyAboutPokemon(${id})'>Notify</a>&nbsp;&nbsp;
       <a href='javascript:removePokemonMarker("${encounter_id}")'>Remove</a>&nbsp;&nbsp;
       <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
     </div>`;
-    return contentstring;
+  return contentstring;
 }
 
 function gymLabel(team_name, team_id, gym_points, latitude, longitude) {
-    var gym_color = ["0, 0, 0, .4", "74, 138, 202, .6", "240, 68, 58, .6", "254, 217, 40, .6"];
-    var str;
-    if (team_id == 0) {
-        str = `<div><center>
-            <div>
-                <b style='color:rgba(${gym_color[team_id]})'>${team_name}</b><br>
-                <img height='70px' style='padding: 5px;' src='static/forts/${team_name}_large.png'>
-            </div>
-            <div>
-                Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
-            </div>
-            <div>
-                <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}'
-                        target='_blank' title='View in Maps'>Get directions</a>
-            </div>
-            </center></div>`;
-    } else {
-        var gym_prestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000];
-        var gym_level = 1;
-        while (gym_points >= gym_prestige[gym_level - 1]) {
-                gym_level++;
-        }
-        str = `
-            <div><center>
-            <div style='padding-bottom: 2px'>Gym owned by:</div>
-            <div>
-                <b style='color:rgba(${gym_color[team_id]})'>Team ${team_name}</b><br>
-                <img height='70px' style='padding: 5px;' src='static/forts/${team_name}_large.png'>
-            </div>
-            <div>Level: ${gym_level} | Prestige: ${gym_points}</div>
-            <div>
-                <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}'
-                        target='_blank' title='View in Maps'>Get directions</a>
-            </div>
-            </center></div>`;
+  var gym_color = ["0, 0, 0, .4", "74, 138, 202, .6", "240, 68, 58, .6", "254, 217, 40, .6"];
+  var str;
+  if (team_id == 0) {
+    str = `
+      <div>
+        <center>
+          <div>
+            <b style='color:rgba(${gym_color[team_id]})'>${team_name}</b><br>
+            <img height='70px' style='padding: 5px;' src='static/forts/${team_name}_large.png'>
+          </div>
+          <div>
+            Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+          </div>
+          <div>
+            <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
+          </div>
+        </center>
+      </div>`;
+  } else {
+    var gym_prestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000];
+    var gym_level = 1;
+    while (gym_points >= gym_prestige[gym_level - 1]) {
+      gym_level++;
     }
+    str = `
+      <div>
+        <center>
+          <div style='padding-bottom: 2px'>
+            Gym owned by:
+          </div>
+          <div>
+            <b style='color:rgba(${gym_color[team_id]})'>Team ${team_name}</b><br>
+            <img height='70px' style='padding: 5px;' src='static/forts/${team_name}_large.png'>
+          </div>
+          <div>
+            Level: ${gym_level} | Prestige: ${gym_points}
+          </div>
+          <div>
+            Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+          </div>
+          <div>
+            <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
+          </div>
+        </center>
+      </div>`;
+  }
 
-    return str;
+  return str;
 }
 
 function pokestopLabel(lured, last_modified, active_pokemon_id, latitude, longitude) {
@@ -553,12 +512,18 @@ function pokestopLabel(lured, last_modified, active_pokemon_id, latitude, longit
         <span class='label-countdown' disappears-at='${expire_time}'>(00m00s)</span>
       </div>
       <div>
+        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
+      </div>
+      <div>
         <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
       </div>`;
   } else {
     str = `
       <div>
         <b>Pokéstop</b>
+      </div>
+      <div>
+        Location: ${latitude.toFixed(6)}, ${longitude.toFixed(7)}
       </div>
       <div>
         <a href='https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}' target='_blank' title='View in Maps'>Get directions</a>
@@ -600,40 +565,51 @@ function getGoogleSprite(index, sprite, display_height) {
   };
 }
 
-function setupPokemonMarker(item, skipNotification) {
+function setupPokemonMarker(item, skipNotification, isBounceDisabled) {
+  // Scale icon size up with the map exponentially
+  var icon_size = 2 + (map.getZoom() - 3) * (map.getZoom() - 3) * .2 + Store.get('iconSizeModifier');
+  var pokemon_index = item.pokemon_id - 1;
+  var sprite = pokemon_sprites[Store.get('pokemonIcons')] || pokemon_sprites['highres']
+  var icon = getGoogleSprite(pokemon_index, sprite, icon_size);
 
-    // Scale icon size up with the map exponentially
-    var icon_size = 30 + .2 + Store.get('iconSizeModifier');
-    var pokemon_index = item.pokemon_id - 1;
-    var sprite = pokemon_sprites[Store.get('pokemonIcons')] || pokemon_sprites['highres']
-    var icon = getGoogleSprite(pokemon_index, sprite, icon_size);
+  var animationDisabled = false;
+  if (isBounceDisabled == true) {
+    animationDisabled = true;
+  }
 
-    var marker = new google.maps.Marker({
-        position: {
-            lat: item.latitude,
-            lng: item.longitude
-        },
-        zIndex: 9999,
-        optimized: false,
-        map: map,
-        icon: icon,
-    });
+  var marker = new google.maps.Marker({
+    position: {
+      lat: item.latitude,
+      lng: item.longitude
+    },
+    zIndex: 9999,
+    optimized: false,
+    map: map,
+    icon: icon,
+    animationDisabled: animationDisabled,
+  });
 
-    marker.infoWindow = new google.maps.InfoWindow({
-        content: pokemonLabel(item.pokemon_name, item.disappear_time, item.pokemon_id, item.latitude, item.longitude, item.encounter_id),
-        disableAutoPan: true
-    });
+  marker.addListener('click', function() {
+    this.setAnimation(null);
+    this.animationDisabled = true;
+  });
 
-    if (notifiedPokemon.indexOf(item.pokemon_id) > -1) {
-        if (!skipNotification) {
-            if (Store.get('playSound')) {
-              audio.play();
-            }
-            sendNotification('A wild ' + item.pokemon_name + ' appeared!', 'Click to load map', 'static/icons/' + item.pokemon_id + '.png', item.latitude, item.longitude);
-        }
-        // Icons still get a bounce, even on redraw
-        marker.setAnimation(google.maps.Animation.BOUNCE);
+  marker.infoWindow = new google.maps.InfoWindow({
+    content: pokemonLabel(item.pokemon_name, item.pokemon_rarity, item.pokemon_types, item.disappear_time, item.pokemon_id, item.latitude, item.longitude, item.encounter_id),
+    disableAutoPan: true
+  });
+
+  if (notifiedPokemon.indexOf(item.pokemon_id) > -1) {
+    if (!skipNotification) {
+      if (Store.get('playSound')) {
+        audio.play();
+      }
+      sendNotification('A wild ' + item.pokemon_name + ' appeared!', 'Click to load map', 'static/icons/' + item.pokemon_id + '.png', item.latitude, item.longitude);
     }
+    if (marker.animationDisabled != true) {
+      marker.setAnimation(google.maps.Animation.BOUNCE);
+    }
+  }
 
   addListeners(marker);
   return marker;
@@ -678,7 +654,7 @@ function setupPokestopMarker(item) {
   });
 
   marker.infoWindow = new google.maps.InfoWindow({
-    content: pokestopLabel(!!item.lure_expiration, item.last_modified, item.active_pokemon_id, item.latitude + .003, item.longitude + .003),
+    content: pokestopLabel(!!item.lure_expiration, item.last_modified, item.active_pokemon_id, item.latitude, item.longitude),
     disableAutoPan: true
   });
 
@@ -700,25 +676,19 @@ function getColorByDate(value) {
 }
 
 function setupScannedMarker(item) {
-    var circleCenter = new google.maps.LatLng(item.latitude, item.longitude);
+  var circleCenter = new google.maps.LatLng(item.latitude, item.longitude);
 
-    var marker = new google.maps.Circle({
-        map: map,
-        clickable: false,
-        center: circleCenter,
-        radius: 70,    // 10 miles in metres
-        fillColor: getColorByDate(item.last_modified),
-        strokeWeight: 1
-    });
+  var marker = new google.maps.Circle({
+    map: map,
+    clickable: false,
+    center: circleCenter,
+    radius: 70, // metres
+    fillColor: getColorByDate(item.last_modified),
+    strokeWeight: 1
+  });
 
-    // marker.infoWindow = new google.maps.InfoWindow({
-    //     content: scannedLabel(item.last_modified),
-    //     position: circleCenter
-    // });
-
-    //addListeners(marker);
-    return marker;
-};
+  return marker;
+}
 
 function clearSelection() {
     if (document.selection ) {
@@ -772,29 +742,12 @@ function clearStaleMarkers() {
     }
   });
 
-    $.each(map_data.scanned, function (key, value) {
-        //If older than 15mins remove
-        if (map_data.scanned[key]['last_modified'] < (new Date().getTime() - 15 * 60 * 1000)) {
-            map_data.scanned[key].marker.setMap(null);
-            delete map_data.scanned[key];
-        }
-    });
-};
-
-function clearOutOfBoundsMarkers(markers) {
-  $.each(markers, function(key, value) {
-      var marker = markers[key].marker;
-      if(typeof marker.getPosition === 'function') {
-        if(!map.getBounds().contains(marker.getPosition())) {
-          markers[key].marker.setMap(null);
-          delete markers[key];
-        }
-      } else if(typeof marker.getCenter === 'function') {
-        if(!map.getBounds().contains(marker.getCenter())) {
-          markers[key].marker.setMap(null);
-          delete markers[key];
-        }
-      }
+  $.each(map_data.scanned, function(key, value) {
+    //If older than 15mins remove
+    if (map_data.scanned[key]['last_modified'] < (new Date().getTime() - 15 * 60 * 1000)) {
+      map_data.scanned[key].marker.setMap(null);
+      delete map_data.scanned[key];
+    }
   });
 }
 
@@ -978,43 +931,36 @@ function processScanned(i, item) {
 
 
 function updateMap() {
-
-    loadRawData().done(function (result) {
-        $.each(result.pokemons, processPokemons);
-        $.each(result.pokestops, processPokestops);
-        $.each(result.pokestops, processLuredPokemon);
-        $.each(result.gyms, processGyms);
-        $.each(result.scanned, processScanned);
-        showInBoundsMarkers(map_data.pokemons);
-        showInBoundsMarkers(map_data.lure_pokemons);
-        showInBoundsMarkers(map_data.gyms);
-        showInBoundsMarkers(map_data.pokestops);
-        showInBoundsMarkers(map_data.scanned);
-
-        freeOutOfBoundsData(map_data.pokemons,300);
-        freeOutOfBoundsData(map_data.pokestops,200);
-        freeOutOfBoundsData(map_data.scanned,200);
-        clearStaleMarkers();
-    });
-};
-
-//Used to clear markers out of bounds after a certain threshold
-function freeOutOfBoundsData(data,lim) {
-    var len = Object.keys(data).length;
-    console.log(len)
-    if(len > lim) {
-        clearOutOfBoundsMarkers(data);
+  loadRawData().done(function(result) {
+    $.each(result.pokemons, processPokemons);
+    $.each(result.pokestops, processPokestops);
+    $.each(result.pokestops, processLuredPokemon);
+    $.each(result.gyms, processGyms);
+    $.each(result.scanned, processScanned);
+    showInBoundsMarkers(map_data.pokemons);
+    showInBoundsMarkers(map_data.lure_pokemons);
+    showInBoundsMarkers(map_data.gyms);
+    showInBoundsMarkers(map_data.pokestops);
+    showInBoundsMarkers(map_data.scanned);
+    clearStaleMarkers();
+    if ($("#stats").hasClass("visible")) {
+      countMarkers();
     }
+  });
 }
 
+
+
 function redrawPokemon(pokemon_list) {
-    var skipNotification = true;
-    $.each(pokemon_list, function(key, value) {
-        var item =  pokemon_list[key];
-        var new_marker = setupPokemonMarker(item, skipNotification);
-        item.marker.setMap(null);
-        pokemon_list[key].marker = new_marker;
-    });
+  var skipNotification = true;
+  $.each(pokemon_list, function(key, value) {
+    var item = pokemon_list[key];
+    if (!item.hidden) {
+      var new_marker = setupPokemonMarker(item, skipNotification, this.marker.animationDisabled);
+      item.marker.setMap(null);
+      pokemon_list[key].marker = new_marker;
+    }
+  });
 };
 
 var updateLabelDiffTime = function() {
@@ -1071,147 +1017,95 @@ function sendNotification(title, text, icon, lat, lng) {
   }
 }
 
-function myLocationButton(map, locMarker) {
-    var locationContainer = document.createElement('div');
+function myLocationButton(map, marker) {
+  var locationContainer = document.createElement('div');
 
-    var locationButton = document.createElement('button');
-    locationButton.style.backgroundColor = '#fff';
-    locationButton.style.border = 'none';
-    locationButton.style.outline = 'none';
-    locationButton.style.width = '28px';
-    locationButton.style.height = '28px';
-    locationButton.style.borderRadius = '2px';
-    locationButton.style.boxShadow = '0 1px 4px rgba(0,0,0,0.3)';
-    locationButton.style.cursor = 'pointer';
-    locationButton.style.marginRight = '10px';
-    locationButton.style.padding = '0px';
-    locationButton.title = 'Your Location';
-    locationContainer.appendChild(locationButton);
+  var locationButton = document.createElement('button');
+  locationButton.style.backgroundColor = '#fff';
+  locationButton.style.border = 'none';
+  locationButton.style.outline = 'none';
+  locationButton.style.width = '28px';
+  locationButton.style.height = '28px';
+  locationButton.style.borderRadius = '2px';
+  locationButton.style.boxShadow = '0 1px 4px rgba(0,0,0,0.3)';
+  locationButton.style.cursor = 'pointer';
+  locationButton.style.marginRight = '10px';
+  locationButton.style.padding = '0px';
+  locationButton.title = 'Your Location';
+  locationContainer.appendChild(locationButton);
 
-    var locationIcon = document.createElement('div');
-    locationIcon.style.margin = '5px';
-    locationIcon.style.width = '18px';
-    locationIcon.style.height = '18px';
-    locationIcon.style.backgroundImage = 'url(static/mylocation-sprite-1x.png)';
-    locationIcon.style.backgroundSize = '180px 18px';
-    locationIcon.style.backgroundPosition = '-55px 0px';
-    locationIcon.style.backgroundRepeat = 'no-repeat';
-    locationIcon.id = 'navGeoBtn-icon';
-    locationButton.appendChild(locationIcon);
+  var locationIcon = document.createElement('div');
+  locationIcon.style.margin = '5px';
+  locationIcon.style.width = '18px';
+  locationIcon.style.height = '18px';
+  locationIcon.style.backgroundImage = 'url(static/mylocation-sprite-1x.png)';
+  locationIcon.style.backgroundSize = '180px 18px';
+  locationIcon.style.backgroundPosition = '0px 0px';
+  locationIcon.style.backgroundRepeat = 'no-repeat';
+  locationIcon.id = 'current-location';
+  locationButton.appendChild(locationIcon);
 
-    watchOpts = {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-    }
+  locationButton.addEventListener('click', function() { centerMapOnLocation() });
 
-    locationButton.addEventListener('click', function() {
-        var locBtnIcon = document.getElementById("navGeoBtn-icon");
-        //geoWatch enabled and not following, snap to position
-        if(geoWatchPos && !locationMarker.follow) {
-            locBtnIcon.style.backgroundPosition = '-144px 0px';
-            locationMarker.setOptions({'opacity': 1});
-            locationMarker.follow = true;
-            map.panTo(locationMarker.getPosition());
-        } else if (navigator.geolocation && !geoWatchPos) { //not enabled, watch
-            geoWatchPos = navigator.geolocation.watchPosition(success,err,watchOpts);
-            locationMarker.setOptions({'opacity': 1});
-            locationMarker.setVisible(true);
-            locBtnIcon.style.backgroundPosition = '-144px 0px';
-            locationMarker.follow = true;
-        } else { //enabled, unwatch
-            locBtnIcon.style.backgroundPosition = '-36px 0px';
-            navigator.geolocation.clearWatch(geoWatchPos);
-            locationMarker.setVisible(false);
-            locationMarker.follow = false;
-            geoWatchPos = null;
-        }
-    });
-
-    function success(pos) {
-        var forceScan = false;
-        var lat = pos.coords.latitude;
-        var lng = pos.coords.longitude;
-        var steps = document.getElementById("steps").value;
-        var latlng = new google.maps.LatLng(lat, lng);
-
-        locationMarker.setPosition(latlng);
-
-        if(!placeMarker) {
-            setupPlaceMarker(map,latlng);
-        }
-        var distToOld;
-        if(!locationMarker.lastScanTime || !locationMarker.lastScanPos) {
-            forceScan = true;
-            distToOld = 20000;
-        } else {
-            distToOld = getPointDistance(locationMarker.lastScanPos,latlng);
-        }
-        var dist = getPointDistance(placeMarker.getPosition(), latlng)
-
-        var lim = steps*125;
-        var inBounds = (dist > lim && distToOld > lim);
-        var delta = Date.now()-locationMarker.lastScanTime;
-        console.log(forceScan + " " +  delta + " " + inBounds + " " + lim + " " + dist + " old: " + distToOld);
-        if (forceScan || (Store.get('geoLocate') && (inBounds || delta > 60000))) {
-            sendNewScanRequest(lat,lng,steps,function() {
-                if(locationMarker.follow) {
-                    placeMarker.setPosition(latlng);
-                    map.panTo(latlng);
-                }
-                locationMarker.lastScanTime = Date.now();
-                locationMarker.lastScanPos = latlng;
-            });
-        }
-    }
-    function err(err) {
-        console.log(err);
-    }
-
-
-    locationContainer.index = 1;
-
-
-    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationContainer);
+  locationContainer.index = 1;
+  map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationContainer);
 }
 
-function sendNewScanRequest(lat,lng,steps,cb) {
-    $.post("new_scan?lat=" + lat + "&lon=" + lng + "&steps=" + steps).done(function () {
-        if(cb && typeof cb === "function") {
-            cb();
-        }
+function centerMapOnLocation() {
+  var currentLocation = document.getElementById('current-location');
+  var imgX = '0';
+  var animationInterval = setInterval(function() {
+    if (imgX == '-18') imgX = '0';
+    else imgX = '-18';
+    currentLocation.style.backgroundPosition = imgX + 'px 0';
+  }, 500);
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+      locationMarker.setVisible(true);
+      locationMarker.setOptions({
+        'opacity': 1
+      });
+      locationMarker.setPosition(latlng);
+      map.setCenter(latlng);
+      clearInterval(animationInterval);
+      currentLocation.style.backgroundPosition = '-144px 0px';
     });
+  } else {
+    clearInterval(animationInterval);
+    currentLocation.style.backgroundPosition = '0px 0px';
+  }
 }
 
 function addMyLocationButton() {
-    locationMarker = new google.maps.Marker({
-        map: map,
-        animation: google.maps.Animation.DROP,
-        position: {lat: center_lat, lng: center_lng},
-        icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillOpacity: 1,
-            fillColor: '#1c8af6',
-            scale: 6,
-            strokeColor: '#1c8af6',
-            strokeWeight: 8,
-            strokeOpacity: 0.3
-        }
+  locationMarker = new google.maps.Marker({
+    map: map,
+    animation: google.maps.Animation.DROP,
+    position: {
+      lat: center_lat,
+      lng: center_lng
+    },
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      fillOpacity: 1,
+      fillColor: '#1c8af6',
+      scale: 6,
+      strokeColor: '#1c8af6',
+      strokeWeight: 8,
+      strokeOpacity: 0.3
+    }
+  });
+  locationMarker.setVisible(false);
+
+  myLocationButton(map, locationMarker);
+
+  google.maps.event.addListener(map, 'dragend', function() {
+    var currentLocation = document.getElementById('current-location');
+    currentLocation.style.backgroundPosition = '0px 0px';
+    locationMarker.setOptions({
+      'opacity': 0.5
     });
-    locationMarker.setVisible(false);
-    locationMarker.follow = false;
-
-    myLocationButton(map, locationMarker);
-
-    google.maps.event.addListener(map, 'dragend', function() {
-        var geoLocBtn = document.getElementById('navGeoBtn-icon');
-        if(locationMarker.follow) {
-            geoLocBtn.style.backgroundPosition = '0px 0px';
-            locationMarker.follow = false;
-        }
-
-        locationMarker.setOptions({'opacity': 0.5});
-    });
+  });
 }
 
 function changeLocation(lat, lng) {
@@ -1318,7 +1212,10 @@ $(function() {
     );
     return $state;
   };
-    
+
+  if (Store.get('startAtUserLocation')) {
+    centerMapOnLocation();
+  }
 
   $selectExclude = $("#exclude-pokemon");
   $selectNotify = $("#notify-pokemon");
@@ -1377,9 +1274,27 @@ $(function() {
     $selectNotify.val(Store.get('remember_select_notify')).trigger("change");
   });
 
-    // run interval timers to regularly update map and timediffs
-    window.setInterval(updateLabelDiffTime, 1000);
-    window.setInterval(updateMap, 5000);
+  // run interval timers to regularly update map and timediffs
+  window.setInterval(updateLabelDiffTime, 1000);
+  window.setInterval(updateMap, 5000);
+  window.setInterval(function() {
+    if (navigator.geolocation && Store.get('geoLocate')) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        var baseURL = location.protocol + "//" + location.hostname + (location.port ? ":" + location.port : "");
+        var lat = position.coords.latitude;
+        var lon = position.coords.longitude;
+
+        //the search function makes any small movements cause a loop. Need to increase resolution
+        if (getPointDistance(marker.getPosition(), (new google.maps.LatLng(lat, lon))) > 40) {
+          $.post(baseURL + "/next_loc?lat=" + lat + "&lon=" + lon).done(function() {
+            var center = new google.maps.LatLng(lat, lon);
+            map.panTo(center);
+            marker.setPosition(center);
+          });
+        }
+      });
+    }
+  }, 1000);
 
   //Wipe off/restore map icons when switches are toggled
   function buildSwitchChangeListener(data, data_type, storageKey) {
@@ -1437,15 +1352,21 @@ $(function() {
     redrawPokemon(map_data.lure_pokemons);
   });
 
-    $('#geoloc-switch').change(function() {  
-        if(!navigator.geolocation)  
-            this.checked = false;  
-        else   
-            Store.set('geoLocate', this.checked);
-    });
+  $('#geoloc-switch').change(function() {
+    $("#next-location").prop("disabled", this.checked);
+    $("#next-location").css("background-color", this.checked ? "#e0e0e0" : "#ffffff");
+    if (!navigator.geolocation)
+      this.checked = false;
+    else
+      Store.set('geoLocate', this.checked);
+  });
+
+  $('#search-switch').change(function() {
+    searchControl(this.checked?'on':'off');
+  });
+
+  $('#start-at-user-location-switch').change(function() {
+    Store.set("startAtUserLocation", this.checked);
+  });
 
 });
-
-function getURLParameter(name) {
-    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
-}

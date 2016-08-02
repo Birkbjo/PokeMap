@@ -129,5 +129,5 @@ module.exports = function(grunt) {
   grunt.registerTask('build', ['clean', 'js-build', 'css-build']);
   grunt.registerTask('lint', ['js-lint']);
   grunt.registerTask('default', ['lint', 'build', 'watch']);
-
+  grunt.registerTask('dev-build', ['babel']);
 };

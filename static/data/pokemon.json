@@ -1,7 +1,7 @@
 {
   "1": {
     "name": "Bulbasaur",
-    "rarity": "Uncommon",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Grass",
@@ -83,7 +83,7 @@
   },
   "7": {
     "name": "Squirtle",
-    "rarity": "Uncommon",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Water",
@@ -1681,7 +1681,7 @@
   },
   "133": {
     "name": "Eevee",
-    "rarity": "Common",
+    "rarity": "Uncommon",
     "types": [
       {
         "type": "Normal",
@@ -1811,7 +1811,7 @@
   },
   "143": {
     "name": "Snorlax",
-    "rarity": "Rare",
+    "rarity": "Very Rare",
     "types": [
       {
         "type": "Normal",
@@ -1867,7 +1867,7 @@
   },
   "147": {
     "name": "Dratini",
-    "rarity": "Uncommon",
+    "rarity": "Rare",
     "types": [
       {
         "type": "Dragon",

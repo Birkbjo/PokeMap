@@ -35,12 +35,14 @@
     <div class="wrapper">
       <!-- Header -->
       <header id="header">
-        <a href="#nav">Options</a>
+        <a href="#nav"><span class="label">Options</span></a>
         <h1><a href="#">Pokémon Go Map</a></h1>
-		<a href="#stats" id="statsToggle" class="statsNav" style="float: right;">Stats</a>
+        <a href="#stats" id="statsToggle" class="statsNav" style="float: right;"><span class="label">Stats</span></a>
       </header>
       <!-- NAV -->
       <nav id="nav">
+        <h3>Steps</h3>
+        <input type="range" id ="steps" min = "1" max = "8" value="2">
         <div class="form-control switch-container" style="display:{{is_fixed}}" >
           <label for="next-location">
             <h3>Change scan location</h3>
