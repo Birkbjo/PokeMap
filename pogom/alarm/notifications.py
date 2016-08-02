@@ -13,6 +13,7 @@ from ..utils import get_pokemon_name, get_alarm_config
 class Notifications:
 
 	def __init__(self):
+		return
 		filepath = os.path.dirname(os.path.dirname(__file__))
 		with open(os.path.join(filepath, '..', 'alarms.json')) as file:
 			settings = json.load(file)
