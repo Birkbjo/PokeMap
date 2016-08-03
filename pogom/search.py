@@ -166,7 +166,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit):
         # If there are no search_items_queue either the loop has finished (or been
         # cleared above) -- either way, time to fill it back up
         if search_items_queue.empty():
-            log.debug('Search queue empty, restarting loop')
+            log.info('Search queue empty, restarting loop')
             for step, step_location in enumerate(generate_location_steps(current_location, args.step_limit), 1):
                 log.debug('Queueing step %d @ %f/%f/%f', step, step_location[0], step_location[1], step_location[2])
                 search_args = (step, step_location)
@@ -175,7 +175,7 @@ def search_overseer_thread(args, new_location_queue, pause_bit):
         #     log.info('Search queue processing, %d items left', search_items_queue.qsize())
 
         # Now we just give a little pause here
-        time.sleep(1)
+        time.sleep(args.main_delay)
 
 
 def search_worker_thread(args, account, search_items_queue, parse_lock):
@@ -219,7 +219,9 @@ def search_worker_thread(args, account, search_items_queue, parse_lock):
             # Got the response, lock for parsing and do so (or fail, whatever)
             with parse_lock:
                 try:
-                    parsed = parse_map(response_dict, step_location)
+                    pkmns, pkstops,gyms = parse_map(response_dict, step_location)
+                    if args.notifications:
+                        alarms.notify_pkmns(pkmns);
                     log.debug('Scan step %s completed', step)
                     break # All done, get out of the request-retry loop
                 except KeyError:

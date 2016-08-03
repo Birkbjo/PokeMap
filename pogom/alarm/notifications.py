@@ -4,38 +4,39 @@ import logging
 from datetime import datetime
 
 log = logging.getLogger(__name__)
-
+log.setLevel(logging.INFO);
 from pb_alarm import PB_Alarm
 from slack_alarm import Slack_Alarm
 from twilio_alarm import Twilio_Alarm
-from ..utils import get_pokemon_name, get_alarm_config
-
+from ..utils import get_pokemon_name, get_alarm_config,get_args
+#from Threading import Lock
 class Notifications:
 
 	def __init__(self):
-		return
+		if not get_args().notifications:
+			return
 		filepath = os.path.dirname(os.path.dirname(__file__))
 		with open(os.path.join(filepath, '..', 'alarms.json')) as file:
 			settings = json.load(file)
-			alarm_settings = settings["alarms"]
+
 			self.notify_list = settings["pokemon"]
 			self.seen = {}
 			self.alarms = []
-			auth_settings = get_alarm_config()
-			for alarm in alarm_settings:
-				if alarm['active'] == "True" :
-					if alarm['type'] == 'pushbullet' :
-						pb_auth = auth_settings['pushbullet']
-						self.alarms.append(PB_Alarm(pb_auth['api_key'],auth_settings['url'],pb_auth['channel']))
-					elif alarm['type'] == 'slack' :
-						slack_auth = auth_settings['slack']
-						self.alarms.append(Slack_Alarm(slack_auth['api_key'], slack_auth['channel']))
-					elif alarm['type'] == 'twilio' :
-						twilio_auth = auth_settings['twilio']
-						self.alarms.append(Twilio_Alarm(twilio_auth['account_sid'],
-														twilio_auth['auth_token'],
-														twilio_auth['to_nr'],
-														twilio_auth['from_nr']))
+			alarm_conf = get_alarm_config()
+			alarm_settings = alarm_conf['alarms']
+			for key,value in alarm_settings.iteritems():
+				if value['active']:
+					log.info("Init %s alarm",key)
+					if key == 'pushbullet' :
+						#pb_auth = auth_settings['pushbullet']
+						self.alarms.append(PB_Alarm(value['api_key'],alarm_conf['url'],value['channel']))
+					elif key == 'slack' :
+						self.alarms.append(Slack_Alarm(value['api_key'], value['channel']))
+					elif key == 'twilio' :
+						self.alarms.append(Twilio_Alarm(value['account_sid'],
+														value['auth_token'],
+														value['to_nr'],
+														value['from_nr']))
 					else:
 						log.info("Alarm type not found: " + alarm['type'])
 			

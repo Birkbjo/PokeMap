@@ -26,17 +26,18 @@
 #host:                  # address to listen on (default 127.0.0.1)
 #port:                  # port to listen on (default 5000)
 
-#alarmsettings
-#notifications: false
-#map_url: http://maps.google.com
-#pb_api_key:
-#pb_channel:
-#slack_api_key:
-#slack_channel:
-#twilio_sid:
-#twilio_auth_token:
-#twilio_to_nr:
-#twilio_from_nr:
+# Alarms
+#notifications       #enables notifications
+#notification-map-url: http://maps.google.com
+#pb-api-key:
+#pb-channel: 
+#slack-api-key:
+#slack-channel:
+#twilio-sid:
+#twilio-auth_token:
+#twilio-to_nr:
+#twilio-from_nr:
+
 
 #Uncomment a line when you want to change its default value (Remove # at the beginning)
 #username, password, location and gmaps-key are required

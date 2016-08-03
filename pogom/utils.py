@@ -111,17 +111,18 @@ def get_args():
     parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to',
                         nargs='*', default=False, dest='webhooks')
     parser.add_argument('-n','--notifications',help='Enable notifications',action='store_true',default=False)
-    parser.add_argument('--notification_map_url',help='The url to show a link for in a notification',
+    parser.add_argument('--notification-map-url',help='The url to show a link for in a notification',
                         default="http://maps.google.com")
-    parser.add_argument('--pb_api_key', help='Api key for pushbullet notifications')
-    parser.add_argument('--pb_channel', help='Channeltag name for pushbullet notifications')
-    parser.add_argument('--slack_api_key', help='Api key for slack notifications')
-    parser.add_argument('--slack_channel', help='Channel name for slack notifications')
-    parser.add_argument('--twilio_sid', help='sid for twilio notifications')
-    parser.add_argument('--twilio_auth_token', help='auth token for twilio notifications')
-    parser.add_argument('--twilio_to_nr', help='To number for twilio notifications')
-    parser.add_argument('--twilio_from_nr', help='From number for twilio notifications')
+    parser.add_argument('--pb-api-key', help='Api key for pushbullet notifications')
+    parser.add_argument('--pb-channel', help='Channeltag name for pushbullet notifications')
+    parser.add_argument('--slack-api-key', help='Api key for slack notifications')
+    parser.add_argument('--slack-channel', help='Channel name for slack notifications')
+    parser.add_argument('--twilio-sid', help='sid for twilio notifications')
+    parser.add_argument('--twilio-auth_token', help='auth token for twilio notifications')
+    parser.add_argument('--twilio-to_nr', help='To number for twilio notifications')
+    parser.add_argument('--twilio-from_nr', help='From number for twilio notifications')
     parser.add_argument('--thread-limit','-tl',help='Limit amount of threads (accounts used)',type=int,default=100000)
+    parser.add_argument('--main-delay','-ml',help='Delay before the overseer starts scanning the fixed location',type=int,default=5)
     parser.set_defaults(DEBUG=False)
 
     args = parser.parse_args()
@@ -175,30 +176,34 @@ def get_args():
         # Make the accounts list
         for i, username in enumerate(args.username):
             args.accounts.append({'username': username, 'password': args.password[i], 'auth_service': args.auth_service[i]})
-
+    parsed_args = args
     return args
 
 def get_alarm_config():
     settings = {}
+    alarms = {}
     settings['url'] = parsed_args.notification_map_url
 
     pb = {}
     pb['api_key'] = parsed_args.pb_api_key
     pb['channel'] = parsed_args.pb_channel
-
+    pb['active'] = True if parsed_args.pb_channel and parsed_args.pb_api_key else False
     slack = {}
     slack['api_key'] = parsed_args.slack_api_key
     slack['channel'] = parsed_args.slack_channel
+    slack['active'] = True if parsed_args.slack_api_key and parsed_args.slack_channel else False
 
     twilio = {}
     twilio["account_sid"] = parsed_args.twilio_sid
     twilio["auth_token"] = parsed_args.twilio_auth_token
     twilio["to_nr"] =parsed_args.twilio_to_nr
     twilio["from_nr"] = parsed_args.twilio_from_nr
+    twilio['active'] = True if  parsed_args.twilio_sid else False
 
-    settings['twilio'] = twilio
-    settings['pushbullet'] = pb
-    settings['slack'] = slack
+    alarms['twilio'] = twilio
+    alarms['pushbullet'] = pb
+    alarms['slack'] = slack
+    settings['alarms'] = alarms
     return settings
 
 
